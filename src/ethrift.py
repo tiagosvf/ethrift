@@ -1,5 +1,4 @@
 import json
-import discord
 from discord.ext import commands
 
 queries_list = []
@@ -38,7 +37,7 @@ async def ping(ctx):
 @bot.command()
 async def kill(ctx):
     await ctx.send("Goodbye!")
-    raise SystemExit(0)
+    await bot.logout()
 
 
 @bot.command(aliases=["commands", "help"])
