@@ -1,4 +1,5 @@
 import json
+import discord
 from discord.ext import commands
 
 queries_list = []
@@ -44,6 +45,9 @@ async def kill(ctx):
 async def cmd(ctx):
     result = """
     ```
+I am a simple bot to warn you about new items in eBay searches
+
+Commands:
 !help, !cmd or !commands -> Show this list of commands
 !ping -> Checks if bot is online
     
@@ -51,7 +55,10 @@ async def cmd(ctx):
 !del <indexes separated by spaces>
 !queries -> Lists all currently active queries
 
-!kill -> Shuts down the bot```"""
+!kill -> Shuts down the bot
+
+made by @tiagosvf
+```"""
     await ctx.send(result)
 
 
