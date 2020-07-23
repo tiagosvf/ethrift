@@ -50,9 +50,9 @@ async def cmd(ctx):
     
 !add <\"query keywords\"> <min. price> <max. price>
 !del <indexes separated by spaces>
-!queries -> Lists all the currently active queries
+!queries -> Lists all currently active queries
 
-!kill -> Shuts down the bot");```"""
+!kill -> Shuts down the bot```"""
     await ctx.send(result)
 
 
