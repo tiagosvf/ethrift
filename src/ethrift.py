@@ -43,23 +43,14 @@ async def kill(ctx):
 
 @bot.command(aliases=["commands", "help"])
 async def cmd(ctx):
-    result = """
-    ```
-I am a simple bot to warn you about new items in eBay searches
-
-Commands:
-!help, !cmd or !commands -> Show this list of commands
-!ping -> Checks if bot is online
-    
-!add <\"query keywords\"> <min. price> <max. price>
-!del <indexes separated by spaces>
-!queries -> Lists all currently active queries
-
-!kill -> Shuts down the bot
-
-made by @tiagosvf
-```"""
-    await ctx.send(result)
+    embed = discord.Embed(title="I am a simple bot to warn you about new items in eBay searches",
+                          description="\u200b\u200b", color=0xc200a8)
+    embed.set_author(name="made by @tiagosvf", url="https://github.com/tiagosvf",
+                     icon_url="https://avatars0.githubusercontent.com/u/25352856?s=460&u=f5b0c682e7634580340e2fea35bce3764686e02e&v=4")
+    embed.add_field(name="Commands", value="!help, !cmd or !commands\n!ping\n\n!add <\"keywords\"> <min. price> <max. price>\n!del <indexes separated by spaces>\n!queries\n\n!kill", inline=True)
+    embed.add_field(
+        name="\u200b", value="Shows this list of commands\nChecks if bot is online\n\n\n\nLists all currently active queries\n\nShuts down the bot", inline=True)
+    await ctx.send(embed=embed)
 
 
 @bot.command(aliases=["searches", "list", "lst"])
