@@ -17,8 +17,8 @@ class Query:
 
     def list_queries(self):
         result = ''
-        for query in queries_list:
-            result += f"\n{query.formatted_query()}"
+        for i, query in enumerate(queries_list):
+            result += f"\n{i} | {query.formatted_query()}"
         return result
 
 
@@ -28,6 +28,7 @@ with open("settings.json", 'r') as f:
 
 bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
+
 
 @bot.command()
 async def ping(ctx):
@@ -48,12 +49,14 @@ async def cmd(ctx):
 !ping -> Checks if bot is online
     
 !add <\"query keywords\"> <min. price> <max. price>
+!del <indexes separated by spaces>
 !queries -> Lists all the currently active queries
 
-!kill -> Shuts down the bot"```"""
+!kill -> Shuts down the bot");```"""
     await ctx.send(result)
 
-@bot.command()
+
+@bot.command(aliases=["searches", "list", "lst"])
 async def queries(ctx):
     result = Query.list_queries(queries)
     if result:
@@ -67,5 +70,18 @@ async def add(ctx, query, min_price, max_price):
     _query = Query(query, min_price, max_price)
     queries_list.append(_query)
     await ctx.send(f"Query \"{query}\" with minimum price of {min_price}$ and maximum price of {max_price}$ added")
+
+
+@bot.command(aliases=["del", "rm", "rem", "remove"])
+async def delete(ctx, *indexes):
+    indexes = list(indexes)
+    result = ''
+    for index in sorted(indexes, reverse=True):
+        try:
+            result += f"\n{queries_list.pop(int(index)).formatted_query()}"
+        except IndexError:
+            indexes.remove(index)
+    await ctx.send(f"```Removed {len(indexes)} queries: \n{result}```")
+
 
 bot.run(token)
