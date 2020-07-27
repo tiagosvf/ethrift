@@ -10,28 +10,32 @@ search_list = []
 
 
 class Item:
-    def __init__(self, id, title, price, url, country, condition, thumbnail,
-                 shipping=None):
+    def __init__(self, id, title, price, url, location, condition,
+                 thumbnail=None, shipping=None):
         self.id = id
         self.title = title
         self.price = price
         self.url = url
-        self.country = country
+        self.location = location
         self.condition = condition
         self.thumbnail = thumbnail
         self.shipping = shipping
 
+    def __eq__(self, other):
+        return self.url == other.url
+
     @staticmethod
     def item_from_data(i):
-        item = Item(id=i['itemId'],
-                    title=i['title'],
-                    price=i['sellingStatus']['convertedCurrentPrice']['value'],
-                    url=i['viewItemURL'],
-                    country=i['location'],
-                    condition=i['condition']['conditionDisplayName'],
-                    thumbnail=i['galleryURL'])
         try:
+            item = Item(id=i['itemId'],
+                        title=i['title'],
+                        price=i['sellingStatus']['convertedCurrentPrice']['value'],
+                        url=i['viewItemURL'],
+                        location=i['location'],
+                        condition=i['condition']['conditionDisplayName'])
+
             item.shipping = i['shippingInfo']['shippingServiceCost']['value']
+            item.thumbnail = i['galleryURL']
         except KeyError:
             pass
         return item
@@ -41,6 +45,8 @@ class Item:
         data = ast.literal_eval(str(response.dict()))
         for i in data['searchResult']['item']:
             item = Item.item_from_data(i)
+            if item in search.items: 
+                break
             search.items.append(item)
             await asyncio.sleep(0.01)
 
