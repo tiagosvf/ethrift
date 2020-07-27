@@ -1,9 +1,48 @@
 import json
 import discord
 import asyncio
-from discord.ext import commands
+import ast
+from discord.ext import commands, tasks
+from ebaysdk.finding import Connection as Finding
+from ebaysdk.exception import ConnectionError
 
 search_list = []
+
+
+class Item:
+    def __init__(self, id, title, price, url, country, condition, thumbnail,
+                 shipping=None):
+        self.id = id
+        self.title = title
+        self.price = price
+        self.url = url
+        self.country = country
+        self.condition = condition
+        self.thumbnail = thumbnail
+        self.shipping = shipping
+
+    @staticmethod
+    def item_from_data(i):
+        item = Item(id=i['itemId'],
+                    title=i['title'],
+                    price=i['sellingStatus']['convertedCurrentPrice']['value'],
+                    url=i['viewItemURL'],
+                    country=i['location'],
+                    condition=i['condition']['conditionDisplayName'],
+                    thumbnail=i['galleryURL'])
+        try:
+            item.shipping = i['shippingInfo']['shippingServiceCost']['value']
+        except KeyError:
+            pass
+        return item
+
+    @staticmethod
+    async def items_from_response(search, response):
+        data = ast.literal_eval(str(response.dict()))
+        for i in data['searchResult']['item']:
+            item = Item.item_from_data(i)
+            search.items.append(item)
+            await asyncio.sleep(0.01)
 
 
 class Search:
@@ -29,7 +68,8 @@ class Search:
         data['searches'] = []
         for search in search_list:
             data["searches"].append(
-                {'query': search.query, 'min_price': search.min_price, 'max_price': search.max_price})
+                {'query': search.query, 'min_price': search.min_price, 
+                 'max_price': search.max_price})
             await asyncio.sleep(0.01)
         with open('searches.txt', 'w') as outfile:
             json.dump(data, outfile, indent=4)
@@ -46,6 +86,31 @@ class Search:
             pass
         except KeyError:
             pass
+
+    async def get_items(self):
+        try:
+            api = Finding(config_file='ebay.yaml')
+            response = api.execute('findItemsAdvanced', {'keywords': f'{self.query}',
+                                                         'itemFilter': [
+                                                             {'name': 'Condition',
+                                                                 'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
+                                                             {'name': 'LocatedIn',
+                                                                 'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
+                                                             {'name': 'MinPrice', 'value': f'{self.min_price}',
+                                                                 'paramName': 'Currency', 'paramValue': 'USD'},
+                                                             {'name': 'MaxPrice', 'value': f'{self.max_price}',
+                                                                 'paramName': 'Currency', 'paramValue': 'USD'}
+                                                         ],
+                                                         'sortOrder': 'StartTimeNewest'})
+            await Item.items_from_response(self, response)
+        except ConnectionError:
+            pass
+
+    @staticmethod
+    async def get_items_list():
+        for search in search_list:
+            await search.get_items()
+            await asyncio.sleep(0.01)
 
 
 with open("settings.json", 'r') as f:
@@ -73,7 +138,7 @@ async def kill(ctx):
 async def cmd(ctx):
     embed = discord.Embed(title="\u200b\nI am a simple bot that warns you about new items in eBay searches",
                           description="\u200b\u200b", color=0xc200a8)
-    embed.set_author(name="made by @tiagosvf", url="https://github.com/tiagosvf",
+    embed.set_author(name="ethrift by @tiagosvf", url="https://github.com/tiagosvf",
                      icon_url="https://avatars0.githubusercontent.com/u/25352856?s=460&u=f5b0c682e7634580340e2fea35bce3764686e02e&v=4")
     embed.add_field(name="Commands", value="!help, !cmd or !commands\n!ping\n\n!add <\"keywords\"> <min. price> <max. price>\n!del <indexes separated by spaces>\n!searches, !list or !lst\n\n!kill", inline=True)
     embed.add_field(
@@ -110,5 +175,15 @@ async def delete(ctx, *indexes):
     await Search.save_searches()
     await ctx.send(f"```Removed {len(indexes)} searches: \n{result}```")
 
+
+@bot.command()
+async def get(ctx):  # debugging TODO: delete
+    await Search.get_items_list()
+
+
+@tasks.loop(minutes=1)
+async def get_items():
+    print('.')  # debugging TODO: delete
+    await Search.get_items_list()
 
 bot.run(token)
