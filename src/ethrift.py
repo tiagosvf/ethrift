@@ -2,6 +2,7 @@ import json
 import discord
 import asyncio
 import ast
+from decimal import Decimal
 from discord.ext import commands, tasks
 from ebaysdk.finding import Connection as Finding
 from ebaysdk.exception import ConnectionError
@@ -11,7 +12,7 @@ search_list = []
 
 class Item:
     def __init__(self, id, title, price, url, location, condition,
-                 thumbnail=None, shipping=None):
+                 thumbnail=None, shipping=0):
         self.id = id
         self.title = title
         self.price = price
@@ -23,6 +24,12 @@ class Item:
 
     def __eq__(self, other):
         return self.url == other.url
+
+    async def display(self, channel_id):
+        channel = bot.get_channel(channel_id)
+        total = float(self.price) + float(self.shipping)
+        Decimal(f"{total}").quantize(Decimal("0.00"))
+        await channel.send(f"[{total}] {self.title} ({self.url})")
 
     @staticmethod
     def item_from_data(i):
@@ -41,22 +48,25 @@ class Item:
         return item
 
     @staticmethod
-    async def items_from_response(search, response):
+    async def items_from_response(search, response, initializing):
         data = ast.literal_eval(str(response.dict()))
         for i in data['searchResult']['item']:
             item = Item.item_from_data(i)
-            if item in search.items: 
+            if item in search.items:
                 break
             search.items.append(item)
+            if not initializing:
+                await item.display(search.channel_id)
             await asyncio.sleep(0.01)
 
 
 class Search:
-    def __init__(self, query, min_price, max_price):
+    def __init__(self, query, min_price, max_price, channel_id):
         self.query = query
         self.min_price = min_price
         self.max_price = max_price
         self.items = []
+        self.channel_id = channel_id
 
     def formatted_search(self):
         return f"{self.query} | Min. Price: {self.min_price}$ | Max. Price: {self.max_price}$"
@@ -74,26 +84,29 @@ class Search:
         data['searches'] = []
         for search in search_list:
             data["searches"].append(
-                {'query': search.query, 'min_price': search.min_price, 
-                 'max_price': search.max_price})
+                {'query': search.query, 'min_price': search.min_price,
+                 'max_price': search.max_price,
+                 'channel_id': search.channel_id})
             await asyncio.sleep(0.01)
         with open('searches.txt', 'w') as outfile:
             json.dump(data, outfile, indent=4)
 
     @staticmethod
-    def read_searches():
+    async def read_searches():
         try:
             with open('searches.txt') as json_file:
                 data = json.load(json_file)
                 for q in data['searches']:
-                    search = Search(q['query'], q['min_price'], q['max_price'])
+                    search = Search(q['query'], q['min_price'], q['max_price'],
+                                    q['channel_id'])
                     search_list.append(search)
+                    await search.get_items(True)
         except FileNotFoundError:
             pass
         except KeyError:
             pass
 
-    async def get_items(self):
+    async def get_items(self, initializing):
         try:
             api = Finding(config_file='ebay.yaml')
             response = api.execute('findItemsAdvanced', {'keywords': f'{self.query}',
@@ -108,22 +121,20 @@ class Search:
                                                                  'paramName': 'Currency', 'paramValue': 'USD'}
                                                          ],
                                                          'sortOrder': 'StartTimeNewest'})
-            await Item.items_from_response(self, response)
+            await Item.items_from_response(self, response, initializing)
         except ConnectionError:
             pass
 
     @staticmethod
     async def get_items_list():
         for search in search_list:
-            await search.get_items()
+            await search.get_items(False)
             await asyncio.sleep(0.01)
 
 
 with open("settings.json", 'r') as f:
     config = json.load(f)
     token = config["discord"]["token"]
-
-Search.read_searches()
 
 bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
@@ -163,10 +174,11 @@ async def searches(ctx):
 
 @bot.command()
 async def add(ctx, query, min_price, max_price):
-    search = Search(query, min_price, max_price)
+    search = Search(query, min_price, max_price, ctx.channel.id)
     search_list.append(search)
     await Search.save_searches()
     await ctx.send(f"Search \"{query}\" with minimum price of {min_price}$ and maximum price of {max_price}$ added")
+    await search.get_items(True)
 
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
@@ -185,6 +197,11 @@ async def delete(ctx, *indexes):
 @bot.command()
 async def get(ctx):  # debugging TODO: delete
     await Search.get_items_list()
+
+
+@bot.event
+async def on_ready():
+    await Search.read_searches()
 
 
 @tasks.loop(minutes=1)
