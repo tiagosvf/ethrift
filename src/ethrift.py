@@ -12,7 +12,7 @@ search_list = []
 
 class Item:
     def __init__(self, id, title, price, url, location, condition,
-                 thumbnail=None, shipping=0):
+                 thumbnail=None, shipping=0, start_time=None):
         self.id = id
         self.title = title
         self.price = price
@@ -21,6 +21,7 @@ class Item:
         self.condition = condition
         self.thumbnail = thumbnail
         self.shipping = shipping
+        self.start_time = start_time
 
     def __eq__(self, other):
         return self.url == other.url
@@ -39,7 +40,8 @@ class Item:
                         price=i['sellingStatus']['convertedCurrentPrice']['value'],
                         url=i['viewItemURL'],
                         location=i['location'],
-                        condition=i['condition']['conditionDisplayName'])
+                        condition=i['condition']['conditionDisplayName'],
+                        start_time=i['listingInfo']['startTime'])
 
             item.shipping = i['shippingInfo']['shippingServiceCost']['value']
             item.thumbnail = i['galleryURL']
@@ -50,11 +52,14 @@ class Item:
     @staticmethod
     async def items_from_response(search, response, initializing):
         data = ast.literal_eval(str(response.dict()))
+        newest_start_time = None
         for i in data['searchResult']['item']:
             item = Item.item_from_data(i)
-            if item in search.items:
-                break
-            search.items.append(item)
+            if not newest_start_time:
+                newest_start_time = item.start_time
+                newest_start_time = newest_start_time[:17] + str(
+                    int(newest_start_time[17:19])+1) + newest_start_time[19:]
+                search.newest_start_time = newest_start_time
             if not initializing:
                 await item.display(search.channel_id)
             await asyncio.sleep(0.01)
@@ -65,7 +70,7 @@ class Search:
         self.query = query
         self.min_price = min_price
         self.max_price = max_price
-        self.items = []
+        self.newest_start_time = None
         self.channel_id = channel_id
 
     def formatted_search(self):
@@ -112,13 +117,17 @@ class Search:
             response = api.execute('findItemsAdvanced', {'keywords': f'{self.query}',
                                                          'itemFilter': [
                                                              {'name': 'Condition',
-                                                                 'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
+                                                              'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
                                                              {'name': 'LocatedIn',
-                                                                 'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
+                                                              'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
                                                              {'name': 'MinPrice', 'value': f'{self.min_price}',
-                                                                 'paramName': 'Currency', 'paramValue': 'USD'},
+                                                              'paramName': 'Currency', 'paramValue': 'USD'},
                                                              {'name': 'MaxPrice', 'value': f'{self.max_price}',
-                                                                 'paramName': 'Currency', 'paramValue': 'USD'}
+                                                              'paramName': 'Currency', 'paramValue': 'USD'},
+                                                             {'name': 'ListingType',
+                                                              'value': ['AuctionWithBIN', 'FixedPrice', 'StoreInventory', 'Classified']},
+                                                             {'name': 'StartTimeFrom',
+                                                                 'value': f'{self.newest_start_time}'}
                                                          ],
                                                          'sortOrder': 'StartTimeNewest'})
             await Item.items_from_response(self, response, initializing)
@@ -200,7 +209,7 @@ async def get(ctx):  # debugging TODO: delete
 
 
 @bot.event
-async def on_ready():
+async def on_connect():
     await Search.read_searches()
 
 
