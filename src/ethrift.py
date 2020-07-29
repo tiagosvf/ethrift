@@ -29,11 +29,13 @@ class Item:
         channel = bot.get_channel(channel_id)
         Decimal(f"{self.price}").quantize(Decimal("0.00"))
         embed = discord.Embed(
-            title=f"{self.title}", url=f"{self.url}", description="", color=0xFAA61A)
+            title=f"{self.title}", url=f"{self.url}", description="", color=0xfaa61a)
         embed.set_thumbnail(url=f"{self.thumbnail}")
         embed.add_field(name="Price", value=f"{self.price}$", inline=True)
-        embed.add_field(name="Location", value=f"`{self.location}`", inline=True)
-        embed.add_field(name="Condition", value=f"`{self.condition}`", inline=True)
+        embed.add_field(name="Location",
+                        value=f"`{self.location}`", inline=True)
+        embed.add_field(name="Condition",
+                        value=f"`{self.condition}`", inline=True)
         await channel.send(embed=embed)
 
     @staticmethod
@@ -108,36 +110,41 @@ class Search:
                     search = Search(q['query'], q['min_price'], q['max_price'],
                                     q['channel_id'])
                     search_list.append(search)
-                    await search.get_items(True)
+                   #  await search.get_items(True)
         except FileNotFoundError:
             pass
         except KeyError:
             pass
+        get_items.start()
 
     async def get_items(self, initializing):
         try:
             api = Finding(config_file='ebay.yaml')
-            response = api.execute('findItemsAdvanced', {'keywords': f'{self.query}',
-                                                         'itemFilter': [
-                                                             {'name': 'Condition',
-                                                              'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
-                                                             {'name': 'LocatedIn',
-                                                              'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
-                                                             {'name': 'MinPrice', 'value': f'{self.min_price}',
-                                                              'paramName': 'Currency', 'paramValue': 'USD'},
-                                                             {'name': 'MaxPrice', 'value': f'{self.max_price}',
-                                                              'paramName': 'Currency', 'paramValue': 'USD'},
-                                                             {'name': 'ListingType',
-                                                              'value': ['AuctionWithBIN', 'FixedPrice', 'StoreInventory', 'Classified']},
-                                                             {'name': 'StartTimeFrom',
-                                                                 'value': f'{self.newest_start_time}'}
-                                                         ],
-                                                         'sortOrder': 'StartTimeNewest'})
+
+            api_request = {'keywords': f'{self.query}',
+                           'itemFilter': [
+                               {'name': 'Condition',
+                                'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
+                               {'name': 'LocatedIn',
+                                'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
+                               {'name': 'MinPrice', 'value': f'{self.min_price}',
+                                'paramName': 'Currency', 'paramValue': 'USD'},
+                               {'name': 'MaxPrice', 'value': f'{self.max_price}',
+                                'paramName': 'Currency', 'paramValue': 'USD'},
+                               {'name': 'ListingType',
+                                'value': ['AuctionWithBIN', 'FixedPrice', 'StoreInventory', 'Classified']},
+                               {'name': 'StartTimeFrom',
+                                'value': f'{self.newest_start_time}'}
+                           ],
+                           'sortOrder': 'StartTimeNewest'}
+
+            response = api.execute('findItemsAdvanced', api_request)
+
             await Item.items_from_response(self, response, initializing)
         except ConnectionError:
             pass
 
-    @staticmethod
+    @ staticmethod
     async def get_items_list():
         for search in search_list:
             await search.get_items(False)
@@ -152,18 +159,18 @@ bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
 
 
-@bot.command()
+@ bot.command()
 async def ping(ctx):
     await ctx.send("Pong!")
 
 
-@bot.command()
+@ bot.command()
 async def kill(ctx):
     await ctx.send("Goodbye!")
     await bot.logout()
 
 
-@bot.command(aliases=["commands", "help"])
+@ bot.command(aliases=["commands", "help"])
 async def cmd(ctx):
     embed = discord.Embed(title="\u200b\nI am a simple bot that warns you about new items in eBay searches",
                           description="\u200b\u200b", color=0xc200a8)
@@ -218,7 +225,6 @@ async def on_connect():
 
 @tasks.loop(minutes=1)
 async def get_items():
-    print('.')  # debugging TODO: delete
     await Search.get_items_list()
 
 bot.run(token)
