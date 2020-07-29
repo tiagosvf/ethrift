@@ -12,7 +12,7 @@ search_list = []
 
 class Item:
     def __init__(self, id, title, price, url, location, condition,
-                 thumbnail=None, shipping=0, start_time=None):
+                 thumbnail=None, start_time=None):
         self.id = id
         self.title = title
         self.price = price
@@ -20,7 +20,6 @@ class Item:
         self.location = location
         self.condition = condition
         self.thumbnail = thumbnail
-        self.shipping = shipping
         self.start_time = start_time
 
     def __eq__(self, other):
@@ -28,9 +27,8 @@ class Item:
 
     async def display(self, channel_id):
         channel = bot.get_channel(channel_id)
-        total = float(self.price) + float(self.shipping)
-        Decimal(f"{total}").quantize(Decimal("0.00"))
-        await channel.send(f"[{total}] {self.title} ({self.url})")
+        Decimal(f"{self.price}").quantize(Decimal("0.00"))
+        await channel.send(f"[{self.price}] {self.title} ({self.url})")
 
     @staticmethod
     def item_from_data(i):
@@ -43,7 +41,6 @@ class Item:
                         condition=i['condition']['conditionDisplayName'],
                         start_time=i['listingInfo']['startTime'])
 
-            item.shipping = i['shippingInfo']['shippingServiceCost']['value']
             item.thumbnail = i['galleryURL']
         except KeyError:
             pass
