@@ -28,7 +28,13 @@ class Item:
     async def display(self, channel_id):
         channel = bot.get_channel(channel_id)
         Decimal(f"{self.price}").quantize(Decimal("0.00"))
-        await channel.send(f"[{self.price}] {self.title} ({self.url})")
+        embed = discord.Embed(
+            title=f"{self.title}", url=f"{self.url}", description="", color=0xFAA61A)
+        embed.set_thumbnail(url=f"{self.thumbnail}")
+        embed.add_field(name="Price", value=f"{self.price}$", inline=True)
+        embed.add_field(name="Location", value=f"`{self.location}`", inline=True)
+        embed.add_field(name="Condition", value=f"`{self.condition}`", inline=True)
+        await channel.send(embed=embed)
 
     @staticmethod
     def item_from_data(i):
