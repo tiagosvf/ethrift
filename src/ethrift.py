@@ -3,6 +3,7 @@ import discord
 import asyncio
 import ast
 import math
+from datetime import datetime
 from decimal import Decimal
 from discord.ext import commands, tasks
 from ebaysdk.finding import Connection as Finding
@@ -10,6 +11,7 @@ from ebaysdk.exception import ConnectionError
 
 search_list = []
 max_daily_ebay_calls = 5000
+active_time = [datetime(1900, 1, 1, 0, 0, 0), datetime(1900, 1, 1, 0, 0, 0)]
 
 
 class Item:
@@ -186,9 +188,9 @@ async def cmd(ctx):
                           description="\u200b\u200b", color=0xc200a8)
     embed.set_author(name="ethrift by @tiagosvf", url="https://github.com/tiagosvf",
                      icon_url="https://avatars0.githubusercontent.com/u/25352856?s=460&u=f5b0c682e7634580340e2fea35bce3764686e02e&v=4")
-    embed.add_field(name="Commands", value="!help, !cmd or !commands\n!ping\n\n!add <\"keywords\"> <min. price> <max. price>\n!del <indexes separated by spaces>\n!searches, !list or !lst\n\n!kill", inline=True)
+    embed.add_field(name="Commands", value="!help, !cmd or !commands\n!ping\n\n!add <\"keywords\"> <min. price> <max. price>\n!del <indexes separated by spaces>\n!searches, !list or !lst\n\n!active\n!active from <hh:mm> to <hh:mm>\n\n!kill", inline=True)
     embed.add_field(
-        name="\u200b", value="Shows this list of commands\nChecks if bot is online\n\n\n\nLists all currently active searches\n\nShuts down the bot", inline=True)
+        name="\u200b", value="Shows this list of commands\nChecks if bot is online\n\n\n\nLists all currently active searches\n\nChecks the bot active hours\nSets the bot active hours\n\nShuts down the bot", inline=True)
     await ctx.send(embed=embed)
 
 
@@ -196,7 +198,7 @@ async def cmd(ctx):
 async def searches(ctx):
     result = Search.list_searches()
     if result:
-        await ctx.send(f"```{result}\n\nFetching items every {get_items.minutes} minutes and {get_items.seconds} seconds```")
+        await ctx.send(f"```{result}\n\nFetching items every {get_items_interval_str()}```")
     else:
         await ctx.send("```You have not added any searches. \nAdd one using !add <\"query keywords\"> <min_price> <max_price>```")
 
@@ -229,20 +231,77 @@ async def get(ctx):  # debugging TODO: delete
     await Search.get_items_list()
 
 
+@bot.command()
+async def active(ctx,  *args):
+    args = list(args)
+    global active_time
+    if len(args) == 0:
+        if (active_time[0]-active_time[1]).seconds == 0:
+            await ctx.send("```Active and looking for new items all day```")
+        else:
+            await ctx.send(f"```Active and looking for new items from {str(active_time[0].time())[0:5]} to {str(active_time[1].time())[0:5]}```")
+    else:
+        try:
+            if len(args) < 4:
+                await ctx.send("```Missing arguments.\nUse command as follows: !active from 08:30 to 23:00```")
+                return
+            if args[0].lower() != 'from' or args[2].lower() != 'to':
+                await ctx.send("```Invalid or missing arguments.\nUse command as follows: !active from 08:30 to 23:00```")
+                return
+            active_time = [datetime.strptime(args[1], "%H:%M"),
+                           datetime.strptime(args[3], "%H:%M")]
+
+            await update_get_items_interval()
+            await ctx.send(f"```Active time changed\nI will be looking for items from {str(active_time[0].time())[0:5]} to {str(active_time[1].time())[0:5]} every {get_items_interval_str()}```")
+        except ValueError:
+            await ctx.send("```Invalid time format\nTime should be in HH:MM format like 08:30```")
+
+
 @bot.event
 async def on_connect():
     await Search.read_searches()
 
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        pass
+    elif isinstance(error, commands.CommandError):
+        await ctx.send("```Invalid use of command.\nUse !help for information on how to use commands.```")
+
+
 @tasks.loop(seconds=18)
 async def get_items():
-    await Search.get_items_list()
+    if(is_time_between(active_time[0].time(), active_time[1].time())):
+        await Search.get_items_list()
 
 
 async def update_get_items_interval():
-    seconds = math.ceil((86400/max_daily_ebay_calls)*len(search_list))
-    minutes = seconds//60
-    seconds = seconds-(minutes*60)
+    seconds = difference_between_times(active_time[0], active_time[1]).seconds
+    seconds = 86400 if seconds == 0 else seconds
+    seconds = math.ceil((seconds/max_daily_ebay_calls)*len(search_list))
+    minutes, seconds = divmod(seconds, 60)
     get_items.change_interval(minutes=minutes, seconds=seconds)
+
+
+def is_time_between(begin_time, end_time, check_time=None):
+    check_time = check_time or datetime.utcnow().time()
+    if begin_time < end_time:
+        return check_time >= begin_time and check_time <= end_time
+    else:
+        return check_time >= begin_time or check_time <= end_time
+
+
+def difference_between_times(begin_datetime, end_datetime, check_time=None):
+    check_time = check_time or datetime.utcnow().time()
+    if begin_datetime > end_datetime:
+        return begin_datetime-end_datetime
+    else:
+        return end_datetime-begin_datetime
+
+
+def get_items_interval_str():
+    return f"{get_items.minutes} minutes and {get_items.seconds} seconds"
+
 
 bot.run(token)
