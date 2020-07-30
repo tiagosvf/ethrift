@@ -2,12 +2,14 @@ import json
 import discord
 import asyncio
 import ast
+import math
 from decimal import Decimal
 from discord.ext import commands, tasks
 from ebaysdk.finding import Connection as Finding
 from ebaysdk.exception import ConnectionError
 
 search_list = []
+max_daily_ebay_calls = 5000
 
 
 class Item:
@@ -56,18 +58,21 @@ class Item:
 
     @staticmethod
     async def items_from_response(search, response, initializing):
-        data = ast.literal_eval(str(response.dict()))
-        newest_start_time = None
-        for i in data['searchResult']['item']:
-            item = Item.item_from_data(i)
-            if not newest_start_time:
-                newest_start_time = item.start_time
-                newest_start_time = newest_start_time[:17] + str(
-                    int(newest_start_time[17:19])+1) + newest_start_time[19:]
-                search.newest_start_time = newest_start_time
-            if not initializing:
-                await item.display(search.channel_id)
-            await asyncio.sleep(0.01)
+        try:
+            data = ast.literal_eval(str(response.dict()))
+            newest_start_time = None
+            for i in data['searchResult']['item']:
+                item = Item.item_from_data(i)
+                if not newest_start_time:
+                    newest_start_time = item.start_time
+                    newest_start_time = newest_start_time[:17] + str(
+                        int(newest_start_time[17:19])+1) + newest_start_time[19:]
+                    search.newest_start_time = newest_start_time
+                if not initializing:
+                    await item.display(search.channel_id)
+                await asyncio.sleep(0.01)
+        except KeyError:
+            pass
 
 
 class Search:
@@ -77,6 +82,11 @@ class Search:
         self.max_price = max_price
         self.newest_start_time = None
         self.channel_id = channel_id
+
+    async def add_to_list(self):
+        search_list.append(self)
+        await update_get_items_interval()
+        await self.get_items(True)
 
     def formatted_search(self):
         return f"{self.query} | Min. Price: {self.min_price}$ | Max. Price: {self.max_price}$"
@@ -109,8 +119,7 @@ class Search:
                 for q in data['searches']:
                     search = Search(q['query'], q['min_price'], q['max_price'],
                                     q['channel_id'])
-                    search_list.append(search)
-                   #  await search.get_items(True)
+                    await search.add_to_list()
         except FileNotFoundError:
             pass
         except KeyError:
@@ -154,6 +163,7 @@ class Search:
 with open("settings.json", 'r') as f:
     config = json.load(f)
     token = config["discord"]["token"]
+    max_daily_ebay_calls = int(config["ebay"]["max_daily_api_calls"])
 
 bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
@@ -186,7 +196,7 @@ async def cmd(ctx):
 async def searches(ctx):
     result = Search.list_searches()
     if result:
-        await ctx.send(f"```{result}```")
+        await ctx.send(f"```{result}\n\nFetching items every {get_items.minutes} minutes and {get_items.seconds} seconds```")
     else:
         await ctx.send("```You have not added any searches. \nAdd one using !add <\"query keywords\"> <min_price> <max_price>```")
 
@@ -194,7 +204,7 @@ async def searches(ctx):
 @bot.command()
 async def add(ctx, query, min_price, max_price):
     search = Search(query, min_price, max_price, ctx.channel.id)
-    search_list.append(search)
+    await search.add_to_list()
     await Search.save_searches()
     await ctx.send(f"Search \"{query}\" with minimum price of {min_price}$ and maximum price of {max_price}$ added")
     await search.get_items(True)
@@ -210,6 +220,7 @@ async def delete(ctx, *indexes):
         except IndexError:
             indexes.remove(index)
     await Search.save_searches()
+    await update_get_items_interval()
     await ctx.send(f"```Removed {len(indexes)} searches: \n{result}```")
 
 
@@ -223,8 +234,15 @@ async def on_connect():
     await Search.read_searches()
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(seconds=18)
 async def get_items():
     await Search.get_items_list()
+
+
+async def update_get_items_interval():
+    seconds = math.ceil((86400/max_daily_ebay_calls)*len(search_list))
+    minutes = seconds//60
+    seconds = seconds-(minutes*60)
+    get_items.change_interval(minutes=minutes, seconds=seconds)
 
 bot.run(token)

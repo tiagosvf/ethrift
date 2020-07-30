@@ -2,4 +2,7 @@
     "discord": {
         "token": "YOUR DISCORD BOT TOKEN"
     }
+    "ebay": {
+        "max_daily_api_calls": "5000"
+    }
 }
