@@ -236,10 +236,7 @@ async def active(ctx,  *args):
     args = list(args)
     global active_time
     if len(args) == 0:
-        if (active_time[0]-active_time[1]).seconds == 0:
-            await ctx.send("```Active and looking for new items all day```")
-        else:
-            await ctx.send(f"```Active and looking for new items from {str(active_time[0].time())[0:5]} to {str(active_time[1].time())[0:5]}```")
+        await ctx.send(f"```Active and looking for new items {get_active_time_str()}```")
     else:
         try:
             if len(args) < 4:
@@ -252,7 +249,7 @@ async def active(ctx,  *args):
                            datetime.strptime(args[3], "%H:%M")]
 
             await update_get_items_interval()
-            await ctx.send(f"```Active time changed\nI will be looking for items from {str(active_time[0].time())[0:5]} to {str(active_time[1].time())[0:5]} every {get_items_interval_str()}```")
+            await ctx.send(f"```Active time changed\nI will be looking for items {get_active_time_str()} every {get_items_interval_str()}```")
         except ValueError:
             await ctx.send("```Invalid time format\nTime should be in HH:MM format like 08:30```")
 
@@ -302,6 +299,13 @@ def difference_between_times(begin_datetime, end_datetime, check_time=None):
 
 def get_items_interval_str():
     return f"{get_items.minutes} minutes and {get_items.seconds} seconds"
+
+
+def get_active_time_str():
+    if (active_time[0]-active_time[1]).seconds == 0:
+        return "all day"
+    else:
+        return f"from {str(active_time[0].time())[0:5]} to {str(active_time[1].time())[0:5]}"
 
 
 bot.run(token)
