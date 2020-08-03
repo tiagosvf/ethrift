@@ -25,8 +25,7 @@ class Item:
         self.condition = condition
         self.thumbnail = thumbnail
         self.start_time = start_time
-        self.start_time_f = datetime.strptime(
-            self.start_time[:-5], "%Y-%m-%dT%H:%M:%S")
+        self.start_time_f = str_to_datetime_ebay(self.start_time)
 
     def __eq__(self, other):
         return self.url == other.url
@@ -71,12 +70,12 @@ class Item:
                 item = Item.item_from_data(i)
                 if not newest_start_time:
                     newest_start_time = item.start_time_f
-                    search.newest_start_time = datetime_to_str(
+                    search.newest_start_time = datetime_to_str_ebay(
                         newest_start_time)
                 elif newest_start_time and item.start_time_f > newest_start_time:
                     newest_start_time = item.start_time_f
                     newest_start_time.seconds += 1
-                    search.newest_start_time = datetime_to_str(
+                    search.newest_start_time = datetime_to_str_ebay(
                         newest_start_time)
                 else:
                     break
