@@ -25,6 +25,8 @@ class Item:
         self.condition = condition
         self.thumbnail = thumbnail
         self.start_time = start_time
+        self.start_time_f = datetime.strptime(
+            self.start_time[:-5], "%Y-%m-%dT%H:%M:%S")
 
     def __eq__(self, other):
         return self.url == other.url
@@ -62,14 +64,22 @@ class Item:
     async def items_from_response(search, response, initializing):
         try:
             data = ast.literal_eval(str(response.dict()))
-            newest_start_time = None
+            newest_start_time = None if not search.newest_start_time else str_to_datetime_ebay(
+                search.newest_start_time)
+
             for i in data['searchResult']['item']:
                 item = Item.item_from_data(i)
                 if not newest_start_time:
-                    newest_start_time = item.start_time
-                    newest_start_time = newest_start_time[:17] + str(
-                        int(newest_start_time[17:19])+1) + newest_start_time[19:]
-                    search.newest_start_time = newest_start_time
+                    newest_start_time = item.start_time_f
+                    search.newest_start_time = datetime_to_str(
+                        newest_start_time)
+                elif newest_start_time and item.start_time_f > newest_start_time:
+                    newest_start_time = item.start_time_f
+                    newest_start_time.seconds += 1
+                    search.newest_start_time = datetime_to_str(
+                        newest_start_time)
+                else:
+                    break
                 if not initializing:
                     await item.display(search.channel_id)
                 await asyncio.sleep(0.01)
@@ -274,7 +284,7 @@ async def get_items():
 
 
 async def update_get_items_interval():
-    seconds = difference_between_times(active_time[0], active_time[1]).seconds
+    seconds = seconds_between_times(active_time[0], active_time[1])
     seconds = 86400 if seconds == 0 else seconds
     seconds = math.ceil((seconds/max_daily_ebay_calls)*len(search_list))
     minutes, seconds = divmod(seconds, 60)
@@ -289,12 +299,11 @@ def is_time_between(begin_time, end_time, check_time=None):
         return check_time >= begin_time or check_time <= end_time
 
 
-def difference_between_times(begin_datetime, end_datetime, check_time=None):
-    check_time = check_time or datetime.utcnow().time()
+def seconds_between_times(begin_datetime, end_datetime):
     if begin_datetime > end_datetime:
-        return begin_datetime-end_datetime
+        return 86400 - (begin_datetime-end_datetime).seconds
     else:
-        return end_datetime-begin_datetime
+        return (end_datetime-begin_datetime).seconds
 
 
 def get_items_interval_str():
@@ -306,6 +315,14 @@ def get_active_time_str():
         return "all day"
     else:
         return f"from {str(active_time[0].time())[0:5]} to {str(active_time[1].time())[0:5]}"
+
+
+def datetime_to_str_ebay(_datetime):
+    return f"{_datetime.year:04d}-{_datetime.month:02d}-{_datetime.day:02d}T{_datetime.hour:02d}:{_datetime.minute:02d}:{_datetime.second:02d}.000Z"
+
+
+def str_to_datetime_ebay(str):
+    return datetime.strptime(str[:-5], "%Y-%m-%dT%H:%M:%S")
 
 
 bot.run(token)
