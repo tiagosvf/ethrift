@@ -3,8 +3,8 @@ import discord
 import asyncio
 import ast
 import math
-from datetime import datetime
 from decimal import Decimal
+from datetime import datetime, timedelta
 from discord.ext import commands, tasks
 from ebaysdk.finding import Connection as Finding
 from ebaysdk.exception import ConnectionError
@@ -60,28 +60,25 @@ class Item:
         return item
 
     @staticmethod
-    async def items_from_response(search, response, initializing):
+    async def items_from_response(search, response):
         try:
             data = ast.literal_eval(str(response.dict()))
-            newest_start_time = None if not search.newest_start_time else str_to_datetime_ebay(
-                search.newest_start_time)
+            newest_start_time = str_to_datetime_ebay(search.newest_start_time)
+            aux_nst = newest_start_time
 
             for i in data['searchResult']['item']:
                 item = Item.item_from_data(i)
-                if not newest_start_time:
-                    newest_start_time = item.start_time_f
-                    search.newest_start_time = datetime_to_str_ebay(
-                        newest_start_time)
-                elif newest_start_time and item.start_time_f > newest_start_time:
-                    newest_start_time = item.start_time_f
-                    newest_start_time.seconds += 1
-                    search.newest_start_time = datetime_to_str_ebay(
-                        newest_start_time)
-                else:
+
+                if item.start_time_f > aux_nst:
+                    aux_nst = item.start_time_f
+                    aux_nst = aux_nst + timedelta(seconds=3)
+                elif item.start_time_f < newest_start_time:
                     break
-                if not initializing:
-                    await item.display(search.channel_id)
+
+                await item.display(search.channel_id)
                 await asyncio.sleep(0.01)
+
+            search.newest_start_time = datetime_to_str_ebay(aux_nst)
         except KeyError:
             pass
 
@@ -93,11 +90,12 @@ class Search:
         self.max_price = max_price
         self.newest_start_time = None
         self.channel_id = channel_id
+        self.newest_start_time = datetime_to_str_ebay(datetime.utcnow())
 
     async def add_to_list(self):
         search_list.append(self)
         await update_get_items_interval()
-        await self.get_items(True)
+        await self.get_items()
 
     def formatted_search(self):
         return f"{self.query} | Min. Price: {self.min_price}$ | Max. Price: {self.max_price}$"
@@ -137,7 +135,7 @@ class Search:
             pass
         get_items.start()
 
-    async def get_items(self, initializing):
+    async def get_items(self):
         try:
             api = Finding(config_file='ebay.yaml')
 
@@ -160,14 +158,14 @@ class Search:
 
             response = api.execute('findItemsAdvanced', api_request)
 
-            await Item.items_from_response(self, response, initializing)
+            await Item.items_from_response(self, response)
         except ConnectionError:
             pass
 
-    @ staticmethod
+    @staticmethod
     async def get_items_list():
         for search in search_list:
-            await search.get_items(False)
+            await search.get_items()
             await asyncio.sleep(0.01)
 
 
@@ -180,26 +178,34 @@ bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
 
 
-@ bot.command()
+@bot.command()
 async def ping(ctx):
     await ctx.send("Pong!")
 
 
-@ bot.command()
+@bot.command()
 async def kill(ctx):
     await ctx.send("Goodbye!")
     await bot.logout()
 
 
-@ bot.command(aliases=["commands", "help"])
+@bot.command(aliases=["commands", "help"])
 async def cmd(ctx):
     embed = discord.Embed(title="\u200b\nI am a simple bot that warns you about new items in eBay searches",
                           description="\u200b\u200b", color=0xc200a8)
     embed.set_author(name="ethrift by @tiagosvf", url="https://github.com/tiagosvf",
                      icon_url="https://avatars0.githubusercontent.com/u/25352856?s=460&u=f5b0c682e7634580340e2fea35bce3764686e02e&v=4")
-    embed.add_field(name="Commands", value="!help, !cmd or !commands\n!ping\n\n!add <\"keywords\"> <min. price> <max. price>\n!del <indexes separated by spaces>\n!searches, !list or !lst\n\n!active\n!active from <hh:mm> to <hh:mm>\n\n!kill", inline=True)
-    embed.add_field(
-        name="\u200b", value="Shows this list of commands\nChecks if bot is online\n\n\n\nLists all currently active searches\n\nChecks the bot active hours\nSets the bot active hours\n\nShuts down the bot", inline=True)
+    embed.add_field(name="Commands", value="`!help`, `!cmd` or `!commands` › Show this message"
+                                           "\n`!ping` › Check if bot is online"
+                                           "\n"
+                                           "\n`!add <\"keywords\"> <min. price> <max. price>` › Add search"
+                                           "\n`!del <indexes separated by spaces>` › Remove search"
+                                           "\n`!searches`, `!list` or `!lst` › List all currently active searches"
+                                           "\n"
+                                           "\n`!active` › Check the bot's active hours"
+                                           "\n`!active from <hh:mm> to <hh:mm>` › Set the bot's active hours"
+                                           "\n"
+                                           "\n`!kill` › Shut down the bot", inline=True)
     await ctx.send(embed=embed)
 
 
@@ -218,7 +224,6 @@ async def add(ctx, query, min_price, max_price):
     await search.add_to_list()
     await Search.save_searches()
     await ctx.send(f"Search \"{query}\" with minimum price of {min_price}$ and maximum price of {max_price}$ added")
-    await search.get_items(True)
 
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
