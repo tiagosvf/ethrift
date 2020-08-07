@@ -9,6 +9,8 @@ from discord.ext import commands, tasks
 from ebaysdk.finding import Connection as Finding
 from ebaysdk.exception import ConnectionError
 
+MAX_CHARACTERS = 1900
+
 search_list = []
 max_daily_ebay_calls = 5000
 active_time = [datetime(1900, 1, 1, 0, 0, 0), datetime(1900, 1, 1, 0, 0, 0)]
@@ -117,17 +119,30 @@ class Search:
         return widths
 
     @staticmethod
-    def get_searches_table(list):
+    def get_searches_table(list, page):
         widths = Search.get_table_column_width(list)
         result = f'{"Index": <{widths[0]}}  {"Keywords": <{widths[1]}}  {"Min. Price": <{widths[2]}}  {"Max. Price": <{widths[3]}}'
         result += '\n'.ljust(sum(widths)+7, '-')
+
+        header_len = pagination_count = len(result)
+        page_aux = 1
+
         for i, search in enumerate(list):
-            result += f"\n{i: <{widths[0]}}  {search.formatted_search(widths)}"
+            aux_result = f"\n{i: <{widths[0]}}  {search.formatted_search(widths)}"
+            pagination_count += len(aux_result)
+            if pagination_count > MAX_CHARACTERS:
+                page_aux += 1
+                pagination_count = header_len
+            if len(result) + len(aux_result) < MAX_CHARACTERS and page_aux == page:
+                result += aux_result
+
+        result += f"\n\n< {page} / {page_aux} >"
+
         return result
 
     @staticmethod
-    def list_searches():
-        return Search.get_searches_table(search_list)
+    def list_searches(page):
+        return Search.get_searches_table(search_list, page)
 
     @staticmethod
     async def save_searches():
@@ -222,7 +237,7 @@ async def cmd(ctx):
                                            "\n"
                                            "\n`!add <\"keywords\"> <min. price> <max. price>` › Add search"
                                            "\n`!del <indexes separated by spaces>` › Remove search"
-                                           "\n`!searches`, `!list` or `!lst` › List all currently active searches"
+                                           "\n`!searches`, `!list` or `!lst` `[page]` › List all currently active searches"
                                            "\n"
                                            "\n`!active` › Check the bot's active hours"
                                            "\n`!active from <hh:mm> to <hh:mm>` › Set the bot's active hours"
@@ -231,9 +246,10 @@ async def cmd(ctx):
     await ctx.send(embed=embed)
 
 
-@bot.command(aliases=["queries", "list", "lst"])  # TODO: add pagination when content exceeds 2000 characters
-async def searches(ctx):
-    result = Search.list_searches()
+# TODO: add pagination when content exceeds 2000 characters
+@bot.command(aliases=["queries", "list", "lst"])
+async def searches(ctx, page=1):
+    result = Search.list_searches(page)
     if result:
         await ctx.send(f"```{result}\n\nFetching items every {get_items_interval_str()}```")
     else:
@@ -301,8 +317,8 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         pass
     elif isinstance(error, commands.CommandError):
-        print(error)
-    #     await ctx.send("```Invalid use of command.\nUse !help for information on how to use commands.```") # COMMENTED FOR DEBUGGING TODO: UNCOMMENT
+        print(f"Error: {error}")
+        await ctx.send("```Invalid use of command.\nUse !help for information on how to use commands.```")
 
 
 @tasks.loop(seconds=18)
