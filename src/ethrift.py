@@ -97,15 +97,37 @@ class Search:
         await update_get_items_interval()
         await self.get_items()
 
-    def formatted_search(self):
-        return f"{self.query} | Min. Price: {self.min_price}$ | Max. Price: {self.max_price}$"
+    def formatted_search(self, widths):
+        return f"{self.query: <{widths[1]}}  {self.min_price+'$' : >{widths[2]}}  {self.max_price+'$' : >{widths[3]}}"
+
+    @staticmethod
+    def get_table_column_width(list):
+        widths = [len("Index"), len("Keywords"), len(
+            "Max. Price"), len("Min. Price")]
+        for i, search in enumerate(list):
+            if number_length(i) > widths[0]:
+                widths[0] = number_length(i)
+            if len(search.query) > widths[1]:
+                widths[1] = len(search.query)
+            if len(search.min_price)+1 > widths[2]:
+                widths[2] = len(search.min_price)+1
+            if len(search.max_price)+1 > widths[3]:
+                widths[3] = len(search.max_price)+1
+
+        return widths
+
+    @staticmethod
+    def get_searches_table(list):
+        widths = Search.get_table_column_width(list)
+        result = f'{"Index": <{widths[0]}}  {"Keywords": <{widths[1]}}  {"Min. Price": <{widths[2]}}  {"Max. Price": <{widths[3]}}'
+        result += '\n'.ljust(sum(widths)+7, '-')
+        for i, search in enumerate(list):
+            result += f"\n{i: <{widths[0]}}  {search.formatted_search(widths)}"
+        return result
 
     @staticmethod
     def list_searches():
-        result = ''
-        for i, search in enumerate(search_list):
-            result += f"\n{i} | {search.formatted_search()}"
-        return result
+        return Search.get_searches_table(search_list)
 
     @staticmethod
     async def save_searches():
@@ -209,7 +231,7 @@ async def cmd(ctx):
     await ctx.send(embed=embed)
 
 
-@bot.command(aliases=["queries", "list", "lst"])
+@bot.command(aliases=["queries", "list", "lst"])  # TODO: add pagination when content exceeds 2000 characters
 async def searches(ctx):
     result = Search.list_searches()
     if result:
@@ -229,15 +251,16 @@ async def add(ctx, query, min_price, max_price):
 @bot.command(aliases=["del", "rm", "rem", "remove"])
 async def delete(ctx, *indexes):
     indexes = list(indexes)
-    result = ''
+    removed_searches = []
     for index in sorted(indexes, reverse=True):
         try:
-            result += f"\n{search_list.pop(int(index)).formatted_search()}"
+            removed_searches.append(search_list.pop(int(index)))
         except IndexError:
             indexes.remove(index)
+    result = Search.get_searches_table(removed_searches)
     await Search.save_searches()
     await update_get_items_interval()
-    await ctx.send(f"```Removed {len(indexes)} searches: \n{result}```")
+    await ctx.send(f"```Removed {len(indexes)} searches: \n\n{result}```")
 
 
 @bot.command()
@@ -278,7 +301,8 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
         pass
     elif isinstance(error, commands.CommandError):
-        await ctx.send("```Invalid use of command.\nUse !help for information on how to use commands.```")
+        print(error)
+    #     await ctx.send("```Invalid use of command.\nUse !help for information on how to use commands.```") # COMMENTED FOR DEBUGGING TODO: UNCOMMENT
 
 
 @tasks.loop(seconds=18)
@@ -327,6 +351,15 @@ def datetime_to_str_ebay(_datetime):
 
 def str_to_datetime_ebay(str):
     return datetime.strptime(str[:-5], "%Y-%m-%dT%H:%M:%S")
+
+
+def number_length(n):
+    if n > 0:
+        return int(math.log10(n))+1
+    elif n == 0:
+        return 1
+    else:
+        return int(math.log10(-n))+2
 
 
 bot.run(token)
