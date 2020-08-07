@@ -119,7 +119,7 @@ class Search:
         return widths
 
     @staticmethod
-    def get_searches_table(list, page):
+    def get_searches_table(list, page=1):
         widths = Search.get_table_column_width(list)
         result = f'{"Index": <{widths[0]}}  {"Keywords": <{widths[1]}}  {"Min. Price": <{widths[2]}}  {"Max. Price": <{widths[3]}}'
         result += '\n'.ljust(sum(widths)+7, '-')
@@ -141,7 +141,7 @@ class Search:
         return result
 
     @staticmethod
-    def list_searches(page):
+    def list_searches(page=1):
         return Search.get_searches_table(search_list, page)
 
     @staticmethod
