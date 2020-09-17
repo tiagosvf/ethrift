@@ -4,6 +4,8 @@ import asyncio
 import ast
 import math
 import utils
+import threading
+import time
 from decimal import Decimal
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks
@@ -11,10 +13,27 @@ from ebaysdk.finding import Connection as Finding
 from ebaysdk.exception import ConnectionError
 
 MAX_CHARACTERS = 1900
+MAX_THREADS = 20
+MAX_QUEUE = 100
 
+queue = []
+threads = []
 search_list = []
 max_daily_ebay_calls = 5000
 active_time = [datetime(1900, 1, 1, 0, 0, 0), datetime(1900, 1, 1, 0, 0, 0)]
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
+
+def async_from_sync(function, *args, **kwargs):
+    """
+    Wrapper to allow calling async functions from sync
+    and running them in the main event loop
+    """
+
+    res = function(*args, **kwargs)
+    asyncio.run_coroutine_threadsafe(res, loop).result()
 
 
 class Item:
@@ -33,7 +52,7 @@ class Item:
     def __eq__(self, other):
         return self.url == other.url
 
-    async def display(self, channel_id):
+    def display(self, channel_id):
         channel = bot.get_channel(channel_id)
         Decimal(f"{self.price}").quantize(Decimal("0.00"))
         embed = discord.Embed(
@@ -44,7 +63,7 @@ class Item:
                         value=f"`{self.location}`", inline=True)
         embed.add_field(name="Condition",
                         value=f"`{self.condition}`", inline=True)
-        await channel.send(embed=embed)
+        async_from_sync(channel.send, embed=embed)
 
     @staticmethod
     def item_from_data(i):
@@ -63,7 +82,7 @@ class Item:
         return item if item else None
 
     @staticmethod
-    async def items_from_response(search, response):
+    def items_from_response(search, response):
         try:
             data = ast.literal_eval(str(response.dict()))
             newest_start_time = utils.str_to_datetime_ebay(
@@ -79,8 +98,7 @@ class Item:
                 elif item.start_time_f < newest_start_time:
                     break
 
-                await item.display(search.channel_id)
-                await asyncio.sleep(0.01)
+                item.display(search.channel_id)
 
             search.newest_start_time = utils.datetime_to_str_ebay(aux_nst)
         except KeyError:
@@ -88,13 +106,14 @@ class Item:
 
 
 class Search:
-    def __init__(self, query, min_price, max_price, channel_id):
+    def __init__(self, query, min_price, max_price, channel_id,
+                 newest_start_time=utils.datetime_to_str_ebay(datetime.utcnow())):
         self.query = query
         self.min_price = min_price
         self.max_price = max_price
         self.newest_start_time = None
         self.channel_id = channel_id
-        self.newest_start_time = utils.datetime_to_str_ebay(datetime.utcnow())
+        self.newest_start_time = newest_start_time
 
     def add_to_list(self):
         search_list.append(self)
@@ -173,38 +192,50 @@ class Search:
             pass
         get_items.start()
 
-    async def get_items(self):
-        try:
-            api = Finding(config_file='ebay.yaml')
+        for i in range(MAX_THREADS):
+            get_items_thread = threading.Thread(
+                target=Search.get_items, name=f"Getter{i}", daemon=True)
+            threads.append(get_items_thread)
+            get_items_thread.start()
 
-            api_request = {'keywords': f'{self.query}',
-                           'itemFilter': [
-                               {'name': 'Condition',
-                                'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
-                               {'name': 'LocatedIn',
-                                'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
-                               {'name': 'MinPrice', 'value': f'{self.min_price}',
-                                'paramName': 'Currency', 'paramValue': 'USD'},
-                               {'name': 'MaxPrice', 'value': f'{self.max_price}',
-                                'paramName': 'Currency', 'paramValue': 'USD'},
-                               {'name': 'ListingType',
-                                'value': ['AuctionWithBIN', 'FixedPrice', 'StoreInventory', 'Classified']},
-                               {'name': 'StartTimeFrom',
-                                'value': f'{self.newest_start_time}'}
-                           ],
-                           'sortOrder': 'StartTimeNewest'}
+    def get_items():
+        while True:
+            try:
+                self = queue.pop(0)
+                try:
+                    api = Finding(config_file='ebay.yaml')
 
-            response = api.execute('findItemsAdvanced', api_request)
+                    api_request = {'keywords': f'{self.query}',
+                                'itemFilter': [
+                                    {'name': 'Condition',
+                                        'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
+                                    {'name': 'LocatedIn',
+                                        'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
+                                    {'name': 'MinPrice', 'value': f'{self.min_price}',
+                                        'paramName': 'Currency', 'paramValue': 'USD'},
+                                    {'name': 'MaxPrice', 'value': f'{self.max_price}',
+                                        'paramName': 'Currency', 'paramValue': 'USD'},
+                                    {'name': 'ListingType',
+                                        'value': ['AuctionWithBIN', 'FixedPrice', 'StoreInventory', 'Classified']},
+                                    {'name': 'StartTimeFrom',
+                                        'value': f'{self.newest_start_time}'}
+                                ],
+                                'sortOrder': 'StartTimeNewest'}
 
-            await Item.items_from_response(self, response)
-        except ConnectionError:
-            pass
+                    response = api.execute('findItemsAdvanced', api_request)
+
+                    Item.items_from_response(self, response)
+                except ConnectionError:
+                    pass
+            except IndexError:
+                time.sleep(0.01)
+                continue
 
     @staticmethod
     async def get_items_list():
         for search in search_list:
-            await search.get_items()
-            await asyncio.sleep(0.02)
+            if len(queue) < MAX_QUEUE:
+                queue.append(search)
 
 
 with open("settings.json", 'r') as f:
@@ -248,7 +279,6 @@ async def cmd(ctx):
     await ctx.send(embed=embed)
 
 
-# TODO: add pagination when content exceeds 2000 characters
 @bot.command(aliases=["queries", "list", "lst"])
 async def searches(ctx, page=1):
     result = Search.list_searches(page)

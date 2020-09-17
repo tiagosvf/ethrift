@@ -1,0 +1,274 @@
+{
+    "searches": [
+        {
+            "query": "pentax uc-1 -akku",
+            "min_price": "30",
+            "max_price": "120",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "yashica t proof",
+            "min_price": "40",
+            "max_price": "250",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "asus pg279q -stand -supply",
+            "min_price": "50",
+            "max_price": "350",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "olympus stylus epic -akku",
+            "min_price": "30",
+            "max_price": "120",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "olympus mju i -zoom -akku",
+            "min_price": "20",
+            "max_price": "90",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "yashica t4",
+            "min_price": "40",
+            "max_price": "220",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "minolta riva mini",
+            "min_price": "30",
+            "max_price": "80",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "minolta freedom escort",
+            "min_price": "30",
+            "max_price": "80",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "nikon af 600",
+            "min_price": "20",
+            "max_price": "80",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "pentax espio mini -akku",
+            "min_price": "30",
+            "max_price": "120",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "nikon 28 ti",
+            "min_price": "50",
+            "max_price": "400",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "chinon auto 3001",
+            "min_price": "20",
+            "max_price": "60",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "fuji tiara",
+            "min_price": "30",
+            "max_price": "140",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "fuji cardia",
+            "min_price": "30",
+            "max_price": "140",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "lg 27gl850 -stand -supply",
+            "min_price": "50",
+            "max_price": "300",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "asus vg27aq -stand -supply",
+            "min_price": "50",
+            "max_price": "350",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "y27q-20 -stand -supply",
+            "min_price": "40",
+            "max_price": "300",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "iphone xr unlocked",
+            "min_price": "40",
+            "max_price": "230",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "logitech g keyboard tkl",
+            "min_price": "5",
+            "max_price": "35",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "samsung galaxy s10e unlocked -broken -for",
+            "min_price": "30",
+            "max_price": "250",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "samsung galaxy s9 unlocked -broken -for",
+            "min_price": "30",
+            "max_price": "220",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "logitech g403",
+            "min_price": "5",
+            "max_price": "35",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "cyberpunk 2077",
+            "min_price": "5",
+            "max_price": "60",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "minolta tc-1",
+            "min_price": "50",
+            "max_price": "500",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "contax t2",
+            "min_price": "50",
+            "max_price": "450",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "contax t3",
+            "min_price": "100",
+            "max_price": "850",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "nikon 35ti",
+            "min_price": "50",
+            "max_price": "350",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "leica minilux -vario -elmar -zoom",
+            "min_price": "10",
+            "max_price": "550",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "ricoh gr1",
+            "min_price": "50",
+            "max_price": "220",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "ricoh gr1v",
+            "min_price": "50",
+            "max_price": "450",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "yashica t4 super",
+            "min_price": "40",
+            "max_price": "300",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "yashica t5",
+            "min_price": "40",
+            "max_price": "300",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "kyocera t proof -yashica",
+            "min_price": "40",
+            "max_price": "300",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "yashica t3",
+            "min_price": "40",
+            "max_price": "120",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "iphone xs unlocked -ee -vodafone -sim -CDMA",
+            "min_price": "50",
+            "max_price": "350",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "iphone 11 unlocked -ee -vodafone -sim -CDMA",
+            "min_price": "100",
+            "max_price": "400",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "konica big mini f",
+            "min_price": "40",
+            "max_price": "200",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "konica big mini -z -f -jr -digital",
+            "min_price": "20",
+            "max_price": "100",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "Logitech g pro keyboard",
+            "min_price": "5",
+            "max_price": "70",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "logitech g703",
+            "min_price": "5",
+            "max_price": "60",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "logitech g keyboard tkl",
+            "min_price": "5",
+            "max_price": "35",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "lp the neighbourhood",
+            "min_price": "5",
+            "max_price": "100",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "samsung galaxy s10 unlocked -broken -for",
+            "min_price": "30",
+            "max_price": "260",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "Sony A7 II -for -f\u00fcr",
+            "min_price": "30",
+            "max_price": "500",
+            "channel_id": 734203564708069407
+        },
+        {
+            "query": "pentax uc-1 -akku",
+            "min_price": "30",
+            "max_price": "120",
+            "channel_id": 734203564708069407
+        }
+    ]
+}
