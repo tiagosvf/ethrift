@@ -6,4 +6,4 @@ ebay:
     domain: svcs.ebay.com
     appid: YOUR EBAY APPID
     version: 1.13.0
-    max_api_calls: 5000
+    max_daily_calls: 5000
