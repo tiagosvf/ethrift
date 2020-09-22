@@ -3,6 +3,7 @@ import discord
 import asyncio
 import ast
 import math
+import yaml
 import utils
 import threading
 import time
@@ -16,10 +17,11 @@ MAX_CHARACTERS = 1900
 MAX_THREADS = 20
 MAX_QUEUE = 100
 
+ebay = {"domain": None, "appid": None, "version": None, "max_calls": 5000}
+
 queue = []
 threads = []
 search_list = []
-max_daily_ebay_calls = 5000
 active_time = [datetime(1900, 1, 1, 0, 0, 0), datetime(1900, 1, 1, 0, 0, 0)]
 
 loop = asyncio.new_event_loop()
@@ -203,24 +205,27 @@ class Search:
             try:
                 self = queue.pop(0)
                 try:
-                    api = Finding(config_file='ebay.yaml')
+                    api = Finding(domain=ebay.get("domain"), 
+                                  appid=ebay.get("appid"),
+                                  version=ebay.get("version"),
+                                  config_file=None)
 
                     api_request = {'keywords': f'{self.query}',
-                                'itemFilter': [
-                                    {'name': 'Condition',
+                                   'itemFilter': [
+                                       {'name': 'Condition',
                                         'value': ['New', '1500', '1750', '2000', '2500', '3000', '4000', '5000', '6000']},
-                                    {'name': 'LocatedIn',
+                                       {'name': 'LocatedIn',
                                         'value': ['PT', 'ES', 'DE', 'CH', 'AT', 'BE', 'BG', 'CZ', 'CY', 'HR', 'DK', 'SI', 'EE', 'FI', 'FR', 'GR', 'HU', 'IE', 'IT', 'LT', 'LU', 'NL', 'PL', 'SE', 'GB']},
-                                    {'name': 'MinPrice', 'value': f'{self.min_price}',
+                                       {'name': 'MinPrice', 'value': f'{self.min_price}',
                                         'paramName': 'Currency', 'paramValue': 'USD'},
-                                    {'name': 'MaxPrice', 'value': f'{self.max_price}',
+                                       {'name': 'MaxPrice', 'value': f'{self.max_price}',
                                         'paramName': 'Currency', 'paramValue': 'USD'},
-                                    {'name': 'ListingType',
+                                       {'name': 'ListingType',
                                         'value': ['AuctionWithBIN', 'FixedPrice', 'StoreInventory', 'Classified']},
-                                    {'name': 'StartTimeFrom',
+                                       {'name': 'StartTimeFrom',
                                         'value': f'{self.newest_start_time}'}
-                                ],
-                                'sortOrder': 'StartTimeNewest'}
+                                   ],
+                                   'sortOrder': 'StartTimeNewest'}
 
                     response = api.execute('findItemsAdvanced', api_request)
 
@@ -238,10 +243,13 @@ class Search:
                 queue.append(search)
 
 
-with open("settings.json", 'r') as f:
-    config = json.load(f)
-    token = config["discord"]["token"]
-    max_daily_ebay_calls = int(config["ebay"]["max_daily_api_calls"])
+with open("settings.yaml") as file:
+    settings = yaml.load(file, Loader=yaml.FullLoader)
+    token = settings["discord"]["token"]
+    ebay["max_calls"] = settings["ebay"]["max_daily_calls"]
+    ebay["domain"] = settings["ebay"]["domain"]
+    ebay["appid"] = settings["ebay"]["appid"]
+    ebay["version"] = settings["ebay"]["version"]
 
 
 bot = commands.Bot(command_prefix='!')
@@ -285,19 +293,21 @@ async def searches(ctx, page=1):
     if result:
         await ctx.send(f"```{result}\n\nFetching items every {utils.get_items_interval_str(get_items)}```")
     else:
-        await ctx.send("```You have not added any searches. \nAdd one using !add <\"query keywords\"> <min_price> <max_price>```")
+        await ctx.send("""```You have not added any searches. 
+                           \nAdd one using !add <\"query keywords\"> <min_price> <max_price>```""")
 
 
 @bot.command()
 async def add(ctx, query, min_price, max_price):
     if hasattr(bot.get_channel(ctx.channel.id), 'recipient'):
-        await ctx.send("```Not possible to use bot from this direct messages yet. \nInvite me to a channel and add searches from there please.```")
+        await ctx.send("""```Not possible to use bot from this direct messages yet. 
+                           \nInvite me to a channel and add searches from there please.```""")
         return
 
     search = Search(query, min_price, max_price, ctx.channel.id)
     search.add_to_list()
     await Search.save_searches()
-    await ctx.send(f"Search \"{query}\" with minimum price of {min_price}$ and maximum price of {max_price}$ added")
+    await ctx.send(f"```Search \"{query}\" with minimum price of {min_price}$ and maximum price of {max_price}$ added```")
 
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
@@ -361,7 +371,7 @@ async def get_items():
 def update_get_items_interval():
     seconds = utils.seconds_between_times(active_time[0], active_time[1])
     seconds = 86400 if seconds == 0 else seconds
-    seconds = math.ceil((seconds/max_daily_ebay_calls)*len(search_list))
+    seconds = math.ceil((seconds/ebay.get("max_calls"))*len(search_list))
     minutes, seconds = divmod(seconds, 60)
     get_items.change_interval(minutes=minutes, seconds=seconds)
 

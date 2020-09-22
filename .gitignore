@@ -132,8 +132,7 @@ dmypy.json
 src/.vscode/settings.json
 
 #Config files
-src/settings.json
-src/ebay.yaml
+src/settings.yaml
 
 #Saved searches file
 src/searches.txt

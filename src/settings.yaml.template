@@ -1,0 +1,9 @@
+# EDIT AND RENAME TO 'settings.yaml'
+
+discord:
+    token: YOUR DISCORD BOT TOKEN
+ebay:
+    domain: svcs.ebay.com
+    appid: YOUR EBAY APPID
+    version: 1.13.0
+    max_api_calls: 5000
