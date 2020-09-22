@@ -205,7 +205,7 @@ class Search:
             try:
                 self = queue.pop(0)
                 try:
-                    api = Finding(domain=ebay.get("domain"), 
+                    api = Finding(domain=ebay.get("domain"),
                                   appid=ebay.get("appid"),
                                   version=ebay.get("version"),
                                   config_file=None)
@@ -293,15 +293,13 @@ async def searches(ctx, page=1):
     if result:
         await ctx.send(f"```{result}\n\nFetching items every {utils.get_items_interval_str(get_items)}```")
     else:
-        await ctx.send("""```You have not added any searches. 
-                           \nAdd one using !add <\"query keywords\"> <min_price> <max_price>```""")
+        await ctx.send("```You have not added any searches.\nAdd one using !add <\"query keywords\"> <min_price> <max_price>```")
 
 
 @bot.command()
 async def add(ctx, query, min_price, max_price):
     if hasattr(bot.get_channel(ctx.channel.id), 'recipient'):
-        await ctx.send("""```Not possible to use bot from this direct messages yet. 
-                           \nInvite me to a channel and add searches from there please.```""")
+        await ctx.send("```Not possible to use bot from this direct messages yet.\nInvite me to a channel and add searches from there please.```")
         return
 
     search = Search(query, min_price, max_price, ctx.channel.id)
@@ -376,7 +374,10 @@ def update_get_items_interval():
     get_items.change_interval(minutes=minutes, seconds=seconds)
 
 
-Search.read_searches()
+def main():
+    Search.read_searches()
+    bot.run(token)
 
 
-bot.run(token)
+if __name__ == "__main__":
+    main()

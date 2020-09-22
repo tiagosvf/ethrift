@@ -129,10 +129,10 @@ dmypy.json
 .pyre/
 
 #VSCode
-src/.vscode/settings.json
+ethrift/.vscode/settings.json
 
 #Config files
-src/settings.yaml
+ethrift/settings.yaml
 
 #Saved searches file
-src/searches.txt
+ethrift/searches.txt
