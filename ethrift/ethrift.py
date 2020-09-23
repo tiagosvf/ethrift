@@ -4,9 +4,11 @@ import asyncio
 import ast
 import math
 import yaml
-import utils
 import threading
 import time
+import data
+import utils
+
 from decimal import Decimal
 from datetime import datetime, timedelta
 from discord.ext import commands, tasks
@@ -86,12 +88,12 @@ class Item:
     @staticmethod
     def items_from_response(search, response):
         try:
-            data = ast.literal_eval(str(response.dict()))
+            data_r = ast.literal_eval(str(response.dict()))
             newest_start_time = utils.str_to_datetime_ebay(
                 search.newest_start_time)
             aux_nst = newest_start_time
 
-            for i in data['searchResult']['item']:
+            for i in data_r['searchResult']['item']:
                 item = Item.item_from_data(i)
 
                 if item.start_time_f > aux_nst:
@@ -168,26 +170,25 @@ class Search:
 
     @staticmethod
     async def save_searches():
-        data = {}
-        data['searches'] = []
+        data_s = {}
+        data_s['searches'] = []
         for search in search_list:
-            data["searches"].append(
+            data_s["searches"].append(
                 {'query': search.query, 'min_price': search.min_price,
                  'max_price': search.max_price,
                  'channel_id': search.channel_id})
             await asyncio.sleep(0.01)
-        with open('searches.txt', 'w') as outfile:
-            json.dump(data, outfile, indent=4)
+        data.save_data(data_s)
 
     @staticmethod
     def read_searches():
         try:
-            with open('searches.txt') as json_file:
-                data = json.load(json_file)
-                for q in data['searches']:
-                    search = Search(q['query'], q['min_price'], q['max_price'],
-                                    q['channel_id'])
-                    search.add_to_list()
+            json_s = data.read_data()
+            data_s = json.loads(json_s)
+            for q in data_s['searches']:
+                search = Search(q['query'], q['min_price'], q['max_price'],
+                                q['channel_id'])
+                search.add_to_list()
         except FileNotFoundError:
             pass
         except KeyError:
@@ -243,7 +244,7 @@ class Search:
                 queue.append(search)
 
 
-with open("settings.yaml") as file:
+with open(utils.get_file_path("settings.yaml")) as file:
     settings = yaml.load(file, Loader=yaml.FullLoader)
     token = settings["discord"]["token"]
     ebay["max_calls"] = settings["ebay"]["max_daily_calls"]

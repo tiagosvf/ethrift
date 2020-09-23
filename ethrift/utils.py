@@ -1,5 +1,10 @@
 import math
+import os
 from datetime import datetime
+
+
+def get_file_path(filename):
+    return os.path.join(os.path.dirname(__file__), filename)
 
 
 def is_time_between(begin_time, end_time, check_time=None):
