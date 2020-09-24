@@ -178,12 +178,12 @@ class Search:
                  'max_price': search.max_price,
                  'channel_id': search.channel_id})
             await asyncio.sleep(0.01)
-        data.save_data(data_s)
+        data.save(data_s)
 
     @staticmethod
     def read_searches():
         try:
-            json_s = data.read_data()
+            json_s = data.read()
             data_s = json.loads(json_s)
             for q in data_s['searches']:
                 search = Search(q['query'], q['min_price'], q['max_price'],

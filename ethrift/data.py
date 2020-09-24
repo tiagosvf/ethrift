@@ -15,7 +15,7 @@ with open(utils.get_file_path("settings.yaml")) as file:
     jsonbin["secret-key"] = settings["jsonbin"]["secret-key"]
 
 
-def __save_data(json_data):
+def __save(json_data):
     global current_threads
     for i in range(3):  # Tries 3 times
         try:
@@ -39,14 +39,14 @@ def __save_data(json_data):
     current_threads -= 1
 
 
-def save_data(json_data):
+def save(json_data):
     if current_threads < MAX_THREADS:
-        save_data_thread = threading.Thread(target=__save_data, args=(json_data,),
-                                            name="Data")
-        save_data_thread.start()
+        save_thread = threading.Thread(target=__save, args=(json_data,),
+                                       name="Data")
+        save_thread.start()
 
 
-def read_data():
+def read():
     for i in range(3):  # Tries 3 times
         try:
             bin_id = jsonbin.get("bin-id")

@@ -133,6 +133,3 @@ dmypy.json
 
 #Config files
 ethrift/settings.yaml
-
-#Saved searches file
-ethrift/searches.txt
