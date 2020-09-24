@@ -16,9 +16,9 @@ with open(utils.get_file_path("settings.yaml")) as file:
 
 
 def __save_data(json_data):
+    global current_threads
     for i in range(3):  # Tries 3 times
         try:
-            global current_threads
             current_threads += 1
             
             bin_id = jsonbin.get("bin-id")
@@ -35,6 +35,8 @@ def __save_data(json_data):
         except Exception as exception:
             print(f"Unable to save data to JSONBIN\nException: {exception}")
             return ""
+
+    current_threads -= 1
 
 
 def save_data(json_data):
