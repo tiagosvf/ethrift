@@ -1,0 +1,4 @@
+discord.py==1.4.1
+requests==2.24.0
+ebaysdk==2.2.0
+pyyaml==5.3.1
