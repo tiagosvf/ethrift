@@ -35,7 +35,6 @@ def async_from_sync(function, *args, **kwargs):
     Wrapper to allow calling async functions from sync
     and running them in the main event loop
     """
-
     res = function(*args, **kwargs)
     asyncio.run_coroutine_threadsafe(res, loop).result()
 
@@ -176,7 +175,7 @@ class Search:
             data_s["searches"].append(
                 {'query': search.query, 'min_price': search.min_price,
                  'max_price': search.max_price,
-                 'channel_id': search.channel_id})
+                 'channel_id': f"{search.channel_id}"})
             await asyncio.sleep(0.01)
         data.save(data_s)
 
@@ -187,10 +186,8 @@ class Search:
             data_s = json.loads(json_s)
             for q in data_s['searches']:
                 search = Search(q['query'], q['min_price'], q['max_price'],
-                                q['channel_id'])
+                                int(q['channel_id']))
                 search.add_to_list()
-        except FileNotFoundError:
-            pass
         except KeyError:
             pass
         get_items.start()
@@ -201,6 +198,7 @@ class Search:
             threads.append(get_items_thread)
             get_items_thread.start()
 
+    @staticmethod
     def get_items():
         while True:
             try:
@@ -236,6 +234,8 @@ class Search:
             except IndexError:
                 time.sleep(0.01)
                 continue
+            except Exception as e:  # idc just stop breaking
+                print(f"Exception in get_items: {e}")
 
     @staticmethod
     async def get_items_list():
@@ -245,7 +245,7 @@ class Search:
 
 
 with open(utils.get_file_path("settings.yaml")) as file:
-    settings = yaml.load(file, Loader=yaml.FullLoader)
+    settings = yaml.safe_load(file)
     token = settings["discord"]["token"]
     ebay["max_calls"] = settings["ebay"]["max_daily_calls"]
     ebay["domain"] = settings["ebay"]["domain"]
@@ -322,11 +322,6 @@ async def delete(ctx, *indexes):
     await Search.save_searches()
     update_get_items_interval()
     await ctx.send(f"```Removed {len(indexes)} searches: \n\n{result}```")
-
-
-@bot.command()
-async def get(ctx):  # debugging TODO: delete
-    await Search.get_items_list()
 
 
 @bot.command()
