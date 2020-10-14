@@ -1,6 +1,16 @@
 import math
 import os
+import asyncio
 from datetime import datetime
+
+
+def async_from_sync(loop, function, *args, **kwargs):
+    """
+    Wrapper to allow calling async functions from sync
+    and running them in set event loop
+    """
+    res = function(*args, **kwargs)
+    asyncio.run_coroutine_threadsafe(res, loop).result()
 
 
 def get_file_path(filename):
