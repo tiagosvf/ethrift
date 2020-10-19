@@ -57,9 +57,13 @@ class Filters(dict):
         return aux
 
     def iterate_locatedin(self):
+        if not self.get('LocatedIn'):
+            return False
         self['LocatedIn'] = self.get('LocatedIn')[25:]
         if not self.get('LocatedIn'):
             return False
+
+        return True
 
     def slice_locatedin(self):
         if self.get('LocatedIn'):
