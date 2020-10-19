@@ -85,6 +85,23 @@ class Filters(dict):
         return result_list, self
 
     @staticmethod
+    def filter_response_items(search, item_response):
+        """Verify if item matches search filters
+
+        Some filters like items accepting best offers can't be set specifically
+        in the request and need to be checked per item in the response
+        """
+
+        parsed = urlparse.urlparse(search.url)
+        query = urlparse.parse_qs(parsed.query)
+
+        if query.get('LH_BO') \
+           and item_response['listingInfo']['bestOfferEnabled'] == "false":
+            return False
+
+        return True
+
+    @staticmethod
     def map_located_in_filter(global_id, query):
         prefloc = query.get('LH_PrefLoc')
 
@@ -172,7 +189,12 @@ class Item:
             aux_nst = newest_start_time
 
             for i in data_r['searchResult']['item']:
-                item = Item.item_from_data(i)
+                item = None
+                if Filters.filter_response_items(search, i):
+                    item = Item.item_from_data(i)
+
+                if not item:
+                    continue
 
                 if item.start_time_f > aux_nst:
                     aux_nst = item.start_time_f

@@ -132,7 +132,7 @@ EBAY_GLOBAL_ID_LOCATED_IN = {'EBAY-FRCA': {1: ['CA'],
                              }
 
 EBAY_LISTING_TYPE = {'LH_Auction': ['Auction', 'AuctionWithBIN'],
-                     'LH_BO': ['FixedPrice'],  # FIXME: Need to verify this
+                     'LH_BO': ['FixedPrice'],
                      'LH_BIN': ['FixedPrice', 'AuctionWithBIN'],
                      'LH_CAds': ['Classified']}
 
