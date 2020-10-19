@@ -85,13 +85,13 @@ async def delete(ctx, *indexes):
             removed_searches.append(search_list.pop(int(index)))
         except IndexError:
             indexes.remove(index)
+    update_get_items_interval()
     removed_searches.reverse()
     result = await ebay.Search.get_list_display_embed(list=removed_searches,
                                                       title="Removed searches",
                                                       color=0xed474a,
                                                       indexes=sorted(indexes))
     await ebay.Search.save_searches()
-    update_get_items_interval()
     await ctx.send(embed=result)
 
 
