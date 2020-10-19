@@ -58,13 +58,12 @@ class Filters(dict):
 
     def iterate_locatedin(self):
         if not self.get('LocatedIn'):
-            return False
+            return None
         self['LocatedIn'] = self.get('LocatedIn')[25:]
         if not self.get('LocatedIn'):
-            return False
-
-        return True
-
+            return None
+        return self
+    
     def slice_locatedin(self):
         if self.get('LocatedIn'):
             self['LocatedIn'] = self.get('LocatedIn')[:25]
@@ -79,9 +78,7 @@ class Filters(dict):
     def get_for_request(self):
         result = self.copy()
 
-        # ebay only allows up to 25 countries in the located in filter
-        if not self.iterate_locatedin():
-            self = None
+        self = self.iterate_locatedin()
 
         result.slice_locatedin()
         result_list = result.get_as_list()
