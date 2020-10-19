@@ -60,7 +60,7 @@ async def searches(ctx, page=1):
     if result:
         await ctx.send(embed=result)
     else:
-        await ctx.send("```You have not added any searches.\nAdd one using !add <\"query keywords\"> <min_price> <max_price>```")
+        await ctx.send("```You have not added any searches.\nTo add one go to ebay, do your search, copy the url and use !add <url>```")
 
 
 @bot.command()
