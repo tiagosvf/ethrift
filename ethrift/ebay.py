@@ -264,19 +264,25 @@ class Search:
         return ebay_site, keywords, filters
 
     @staticmethod
-    async def get_searches_table(list, page):
+    async def get_searches_table(list, page, indexes):
         # FIXLATER: Doesn't look good on mobile devices.
         fields = {'#': '', 'Keywords': '', 'Ebay site': ''}
         clean_page_count = {'#': 0, 'Keywords': 0, 'Ebay site': 0}
         page_counter = [clean_page_count.copy()]
         i = 0
 
+        if indexes:
+            indexes = iter(indexes)
+
         while i < len(list):
             search = list[i]
             page_index = len(page_counter)-1
-
+            try:
+                number = i if not indexes else int(next(indexes))
+            except Exception as e:
+                print(e)
             temp_fields = {
-                '#': f"\u200b\n{i}\n",
+                '#': f"\u200b\n{number}\n",
                 'Keywords': f"\u200b\n**[{search.keywords}]({search.url})**\n",
                 'Ebay site': f"\u200b\n{search.ebay_site.lower()}\n",
             }
@@ -296,15 +302,20 @@ class Search:
                 # It keeps going for the sake of counting pages.
                 # I know it's inefficient :)
                 page_counter.append(clean_page_count.copy())
-                i -= 1
+                i -= 1  # Goes back one iteration.
+                # Obviously this doesn't contemplate given indexes and
+                # they would stop matching i after the first page
+                # but I don't need to make it work for now because they are given
+                # solely when deleting searches and in that case
+                # only the first page is shown
 
             i += 1
 
         return fields, len(page_counter)
 
     @staticmethod
-    async def get_list_display_embed(list=search_list, page=1, title="Searches", color=0x1098f7, show_nrs=True):
-        fields, total_pages = await Search.get_searches_table(list, page)
+    async def get_list_display_embed(list=search_list, page=1, title="Searches", color=0x1098f7, indexes=None):
+        fields, total_pages = await Search.get_searches_table(list, page, indexes)
 
         if not any({v for v in fields.values() if v}):
             return None
@@ -313,8 +324,7 @@ class Search:
             title=title, description="Click on a search to open it on ebay and see it's filters", color=color)
 
         for name, value in fields.items():
-            if (name != '#' or show_nrs):
-                embed.add_field(name=name, value=value, inline=True)
+            embed.add_field(name=name, value=value, inline=True)
 
         embed.set_footer(text=f"\u200b\n< {page} / {total_pages} >"
                               "\n\n"
