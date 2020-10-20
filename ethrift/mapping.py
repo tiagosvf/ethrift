@@ -1,3 +1,5 @@
+"""Maps values from ebay urls to FindItemsAdvanced accepted values."""
+
 EBAY_DOMAIN_TO_GLOBAL_ID = {'ebay.com': 'EBAY-US', 'ebay.ca': 'EBAY-ENCA',
                             'cafr.ebay.ca': 'EBAY-FRCA', 'ebay.co.uk': 'EBAY-GB',
                             'ebay.com.au': 'EBAY-AU', 'ebay.at': 'EBAY-AT',
@@ -145,6 +147,18 @@ EBAY_SINGLE_DIGIT_CONDITION_IDS = {'3': ['1000', '1500', '1750'],
 
 
 def map_ebay_site_to_id(hostname):
+    """Maps hostname from ebay url to the website's Global ID
+
+    Each ebay website has a specific Global ID that can be
+    used in requests. Uses the values in EBAY_DOMAIN_TO_GLOBAL_ID sourced from:
+    https://developer.ebay.com/DevZone/finding/CallRef/Enums/GlobalIdList.html
+
+    Keyword Arguments:
+        hostname               -- Example: www.ebay.com
+
+    Return Value:
+    Global ID. Example: EBAY-US
+    """
     aux = EBAY_DOMAIN_TO_GLOBAL_ID.get(hostname)
 
     if not aux and 'ebay.com' in hostname:
@@ -154,17 +168,49 @@ def map_ebay_site_to_id(hostname):
 
 
 def map_global_id_located_in(global_id, prefloc):
+    """Maps values for the item location filter from the url
+    to the it's list of countries depending on the ebay' website
+    being use
+
+    Keyword Arguments:
+        global_id               -- Ebay website Global ID
+        prefloc                 -- Value for the filter in query string
+
+    Return Value:
+    List of countries as ISO codes. Example: ['US', 'CA', 'MX]
+    """
     aux = EBAY_GLOBAL_ID_LOCATED_IN.get(global_id)
     return aux.get(int(prefloc[0]))
 
 
 def map_ebay_query_to_listing_type(query):
+    """Maps possible query parameters to listing type 
+
+    Keyword Arguments:
+        query               -- query string
+
+    Return Value:
+    List of accepted listing types. Example: ['FixedPrice', 'AuctionWithBIN']
+    """
     for p, value in EBAY_LISTING_TYPE.items():
         if query.get(p):
             return value
 
 
 def map_condition_ids(query):
+    """Gets condition IDs from query string and maps them if needed
+
+    Normally condition IDs simply come concatenated with | (e.g: 3000|4000)
+    but for some searches, single digit condition IDs (not accepted by the API)
+    are given. This function get the condition IDs from the query string and maps
+    the single digit ones to a list of equivalent condition IDs.
+
+    Keyword Arguments:
+        query               -- query string
+
+    Return Value:
+    List of condition IDs. Example: ['2750', '3000', '4000', '5000', '6000']
+    """
     condition = query.get('LH_ItemCondition')[0]
     condition = condition.split('|')
     for condition_id in condition:

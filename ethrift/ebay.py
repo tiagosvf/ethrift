@@ -33,6 +33,10 @@ search_list = []
 
 
 class Filters(dict):
+    """Acts like a dict with extra methods to easily manage
+    search filters
+    """
+
     def __init__(self, *arg, **kw):
         super(Filters, self).__init__(*arg, **kw)
 
@@ -52,23 +56,54 @@ class Filters(dict):
         return len(self.__dict__)
 
     def copy(self):
+        """Overwrite dict's copy function
+        to copy and return the dict part of the object.
+        Otherwise it would return a dict instead of a Filter object
+        """
         aux = Filters()
         aux.__dict__ = self.__dict__.copy()
         return aux
 
     def iterate_locatedin(self):
+        """Iterates through the LocatedIn countries list
+
+        Ebay only allows 25 countries at a time in the located in filter
+        so for queries with more than 25 countries, the request
+        has to be split.
+        This function slices the list to cut off the 25 first elements
+        every time and returns None when none are left so the get_items
+        can stop iterating
+
+        Keyword Arguments:
+        self               -- Filter object contaning the search's filters
+
+        Return Value:
+        Filter object without 25 first elements in LocatedIn filter
+        or None if no elements remain.
+        """
         if not self.get('LocatedIn'):
             return None
         self['LocatedIn'] = self.get('LocatedIn')[25:]
         if not self.get('LocatedIn'):
             return None
         return self
-    
+
     def slice_locatedin(self):
+        """Keeps only the 25 first countries for the LocatedIn filter
+
+        Ebay only allows 25 countries at a time in the located in filter
+        so for queries with more than 25 countries, the request
+        has to be split. This function slices the list to keep only
+        the 25 first elements so they can be used in the current request.
+
+        Keyword Arguments:
+        self               -- Filter object contaning the search's filters
+        """
         if self.get('LocatedIn'):
             self['LocatedIn'] = self.get('LocatedIn')[:25]
 
     def get_as_list(self):
+        """Returns the given filters formatted and as a list"""
         filter_list = []
         for filter in self:
             filter_list.append(
@@ -76,6 +111,8 @@ class Filters(dict):
         return filter_list
 
     def get_for_request(self):
+        """Returns filters formatted for request and iterates the located
+        in filter if needed"""
         result = self.copy()
 
         self = self.iterate_locatedin()
@@ -104,6 +141,8 @@ class Filters(dict):
 
     @staticmethod
     def map_located_in_filter(global_id, query):
+        """Gets the item location value from the query string and maps it to a valid
+        ebay API list of countries"""
         prefloc = query.get('LH_PrefLoc')
 
         if not prefloc:
@@ -113,6 +152,16 @@ class Filters(dict):
 
     @staticmethod
     def get_from_query(query, ebay_site):
+        """Gets all the supported filters from the ebay search url query string
+
+        Keyword Arguments:
+        query               -- query string
+        ebay_site           -- the ebay website global ID
+
+        Return Value:
+        Filter object with all the gathered filters.
+        Example: {'ListingType': ['FixedPrice'], 'LocatedIn': ['US', 'CA']}
+        """
         filters = Filters()
 
         if query.get('_udlo'):
@@ -262,6 +311,20 @@ class Search:
 
     @staticmethod
     async def get_searches_table(list, page, indexes):
+        """Gets the requested page from the list of searches and formats it to
+        look good on a Discord embed while counting the total number of pages.
+        A page ends when Discord's limit of characters for any of the fields
+        is reached.
+
+        Keyword Arguments:
+        list               -- list of searches
+        page           
+        indexes            -- custom list of indexes to match the searches being shown
+
+        Return Values:
+        A dictionary of names and values for the Discord embed's fields.
+        The total number of pages.
+        """
         # FIXLATER: Doesn't look good on mobile devices.
         fields = {'#': '', 'Keywords': '', 'Ebay site': ''}
         clean_page_count = {'#': 0, 'Keywords': 0, 'Ebay site': 0}
@@ -312,6 +375,20 @@ class Search:
 
     @staticmethod
     async def get_list_display_embed(list=search_list, page=1, title="Searches", color=0x1098f7, indexes=None):
+        """Returns the list of searches for the specified page as a valid and formatted
+        Discord embed. Custom list of searches and indexes for the searches as well as custom color 
+        and title for the embed can be provided.
+
+        Keyword Arguments:
+        list               -- list of searches
+        page           
+        title              -- title for the Discord embed
+        color              -- color for the discord embed
+        indexes            -- custom list of indexes to match the searches being shown
+
+        Return Value:
+        Discord embed.
+        """
         fields, total_pages = await Search.get_searches_table(list, page, indexes)
 
         if not any({v for v in fields.values() if v}):
