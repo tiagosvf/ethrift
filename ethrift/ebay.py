@@ -145,7 +145,7 @@ class Filters(dict):
         ebay API list of countries"""
         prefloc = query.get('LH_PrefLoc')
 
-        if not prefloc:
+        if not prefloc or not global_id:
             return None
 
         return mapping.map_global_id_located_in(global_id, prefloc)

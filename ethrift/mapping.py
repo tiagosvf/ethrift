@@ -163,6 +163,8 @@ def map_ebay_site_to_id(hostname):
 
     if not aux and 'ebay.com' in hostname:
         aux = 'EBAY-US'
+    elif not aux:
+        return None
 
     return aux
 

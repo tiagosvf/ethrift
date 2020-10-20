@@ -60,7 +60,7 @@ async def searches(ctx, page=1):
     if result:
         await ctx.send(embed=result)
     else:
-        await ctx.send("```You have not added any searches.\nTo add one go to ebay, do your search, copy the url and use !add <url>```")
+        await ctx.send("```You have not added any searches.\nTo add one go to ebay, make a search, copy the URL and use !add <url>```")
 
 
 @bot.command()
@@ -70,9 +70,12 @@ async def add(ctx, url):
         return
 
     search = ebay.Search(url, ctx.channel.id)
-    search.add_to_list()
-    await ebay.Search.save_searches()
-    await search.display(ctx.channel.id, "Added search:")
+    if search and search.ebay_site and search.keywords:
+        search.add_to_list()
+        await ebay.Search.save_searches()
+        await search.display(ctx.channel.id, "Added search:")
+    else:
+        await ctx.send("```The provided URL seems to be invalid.\nGo to ebay, make a search by keywords, and copy the URL in your browser's address bar.```")
 
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
