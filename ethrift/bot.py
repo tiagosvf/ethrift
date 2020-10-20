@@ -69,33 +69,19 @@ async def add(ctx, url):
         await ctx.send("```Not possible to use bot from direct messages yet.\nInvite me to a channel and add searches from there please.```")
         return
 
-    search = ebay.Search(url, ctx.channel.id)
-    if search and search.ebay_site and search.keywords:
-        search.add_to_list()
-        await ebay.Search.save_searches()
-        await search.display(ctx.channel.id, "Added search:")
+    result = await ebay.Search.add_from_url(url, ctx.channel.id)
+    if result:
+        await ctx.send(embed=result)
     else:
         await ctx.send("```The provided URL seems to be invalid.\nGo to ebay, make a search by keywords, and copy the URL in your browser's address bar.```")
 
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
 async def delete(ctx, *indexes):
-    search_list = ebay.get_search_list()
     indexes = list(indexes)
-    removed_searches = []
-    for index in sorted(indexes, reverse=True):
-        try:
-            removed_searches.append(search_list.pop(int(index)))
-        except IndexError:
-            indexes.remove(index)
-    update_get_items_interval()
-    removed_searches.reverse()
-    result = await ebay.Search.get_list_display_embed(list=removed_searches,
-                                                      title="Removed searches",
-                                                      color=0xed474a,
-                                                      indexes=sorted(indexes))
-    await ebay.Search.save_searches()
-    await ctx.send(embed=result)
+    result = await ebay.Search.delete(indexes)
+    if result:
+        await ctx.send(embed=result)
 
 
 @bot.command()

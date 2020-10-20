@@ -279,9 +279,7 @@ class Search:
         self.set_newest_start_time_filter()
         return self.filters.copy()
 
-    async def display(self, channel_id, message):
-        channel = bot.get_bot().get_channel(channel_id)
-
+    async def get_display_embed(self, message):
         embed = discord.Embed(
             title=message, description="", color=0x3bd148)
         embed.add_field(name="Keywords", value=f"{self.keywords}", inline=True)
@@ -289,7 +287,35 @@ class Search:
                         value=f"`{self.ebay_site}`", inline=True)
         embed.add_field(
             name="Filters", value=f"[See on ebay]({self.url})", inline=True)
-        await channel.send(embed=embed)
+        return embed
+
+    @staticmethod
+    async def delete(indexes):
+        search_list = get_search_list()
+        removed_searches = []
+        for index in sorted(indexes, reverse=True):
+            try:
+                removed_searches.append(search_list.pop(int(index)))
+            except IndexError:
+                indexes.remove(index)
+        bot.update_get_items_interval()
+        removed_searches.reverse()
+        result = await Search.get_list_display_embed(list=removed_searches,
+                                                     title="Removed searches",
+                                                     color=0xed474a,
+                                                     indexes=sorted(indexes))
+        await Search.save_searches()
+        return result
+
+    @staticmethod
+    async def add_from_url(url, channel_id):
+        search = Search(url, channel_id)
+        if search and search.ebay_site and search.keywords:
+            search.add_to_list()
+            await Search.save_searches()
+            return await search.get_display_embed("Added search:")
+        else:
+            return None
 
     @staticmethod
     def get_search_from_url(url):
