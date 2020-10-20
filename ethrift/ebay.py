@@ -206,7 +206,7 @@ class Item:
         embed = discord.Embed(
             title=f"{self.title}", url=f"{self.url}", description="", color=0xfaa61a)
         embed.set_thumbnail(url=f"{self.thumbnail}")
-        embed.add_field(name="Price", value=f"{self.price}$", inline=True)
+        embed.add_field(name="Price", value=f"${self.price}", inline=True)
         embed.add_field(name="Location",
                         value=f"`{self.location}`", inline=True)
         embed.add_field(name="Condition",
