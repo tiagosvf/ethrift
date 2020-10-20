@@ -1,13 +1,19 @@
 # External modules
+from discord import embeds
 import yaml
 import math
 import discord
+import asyncio
 from discord.ext import commands, tasks
 from datetime import datetime
 
 # Internal modules
 import utils
 import ebay
+
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 
 active_time = [datetime(1900, 1, 1, 0, 0, 0), datetime(1900, 1, 1, 0, 0, 0)]
@@ -36,9 +42,9 @@ async def cmd(ctx):
                      icon_url="https://avatars0.githubusercontent.com/u/25352856?s=460&u=f5b0c682e7634580340e2fea35bce3764686e02e&v=4")
     embed.add_field(name="Commands", value="`!help`, `!cmd` or `!commands` › Show this message"
                                            "\n`!ping` › Check if bot is online"
-                                           "\n"
-                                           "\n`!add <\"keywords\"> <min. price> <max. price>` › Add search"
-                                           "\n`!del <indexes separated by spaces>` › Remove searches"
+                                           "\n"  # TODO: Create a wiki and add information about supported filters
+                                           "\n`!add <url>` › Add search from URL (read the [wiki](https://github.com/tiagosvf/ethrift-py/wiki) for [supported filters](https://github.com/tiagosvf/ethrift-py/wiki/Usage#supported-filters))"
+                                           "\n`!del <search numbers (#) separated by spaces>` › Remove searches"
                                            "\n`!searches`, `!list` or `!lst` `[page]` › List all currently active searches"
                                            "\n"
                                            "\n`!active` › Check the bot's active hours"
@@ -50,38 +56,46 @@ async def cmd(ctx):
 
 @bot.command(aliases=["queries", "list", "lst"])
 async def searches(ctx, page=1):
-    result = ebay.Search.list_searches(page)
+    result = await ebay.Search.get_list_display_embed(page=page, title="List of searches")
     if result:
-        await ctx.send(f"```{result}\n\nFetching items every {utils.get_items_interval_str(get_items)}```")
+        await ctx.send(embed=result)
     else:
-        await ctx.send("```You have not added any searches.\nAdd one using !add <\"query keywords\"> <min_price> <max_price>```")
+        await ctx.send("```You have not added any searches.\nTo add one go to ebay, make a search, copy the URL and use !add <url>```")
 
 
 @bot.command()
-async def add(ctx, query, min_price, max_price):
+async def add(ctx, url):
     if hasattr(bot.get_channel(ctx.channel.id), 'recipient'):
-        await ctx.send("```Not possible to use bot from this direct messages yet.\nInvite me to a channel and add searches from there please.```")
+        await ctx.send("```Not possible to use bot from direct messages yet.\nInvite me to a channel and add searches from there please.```")
         return
 
-    search = ebay.Search(query, min_price, max_price, ctx.channel.id)
-    search.add_to_list()
-    await ebay.Search.save_searches()
-    await ctx.send(f"```Search \"{query}\" with minimum price of {min_price}$ and maximum price of {max_price}$ added```")
+    search = ebay.Search(url, ctx.channel.id)
+    if search and search.ebay_site and search.keywords:
+        search.add_to_list()
+        await ebay.Search.save_searches()
+        await search.display(ctx.channel.id, "Added search:")
+    else:
+        await ctx.send("```The provided URL seems to be invalid.\nGo to ebay, make a search by keywords, and copy the URL in your browser's address bar.```")
 
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
 async def delete(ctx, *indexes):
+    search_list = ebay.get_search_list()
     indexes = list(indexes)
     removed_searches = []
     for index in sorted(indexes, reverse=True):
         try:
-            removed_searches.append(ebay.get_search_list().pop(int(index)))
+            removed_searches.append(search_list.pop(int(index)))
         except IndexError:
             indexes.remove(index)
-    result = ebay.Search.get_searches_table(removed_searches)
-    await ebay.Search.save_searches()
     update_get_items_interval()
-    await ctx.send(f"```Removed {len(indexes)} searches: \n\n{result}```")
+    removed_searches.reverse()
+    result = await ebay.Search.get_list_display_embed(list=removed_searches,
+                                                      title="Removed searches",
+                                                      color=0xed474a,
+                                                      indexes=sorted(indexes))
+    await ebay.Search.save_searches()
+    await ctx.send(embed=result)
 
 
 @bot.command()
@@ -102,7 +116,7 @@ async def active(ctx,  *args):
                            datetime.strptime(args[3], "%H:%M")]
 
             update_get_items_interval()
-            await ctx.send(f"```Active time changed\nI will be looking for items {utils.get_active_time_str(active_time)} every {utils.get_items_interval_str(get_items)}```")
+            await ctx.send(f"```Active time changed\nI will be looking for items {utils.get_active_time_str(active_time)} every {get_items_interval_str()}```")
         except ValueError:
             await ctx.send("```Invalid time format\nTime should be in HH:MM format like 08:30```")
 
@@ -116,14 +130,18 @@ async def on_command_error(ctx, error):
         await ctx.send("```An error occured.\nUse !help to make sure you used the command correctly.```")
 
 
-@tasks.loop(seconds=18)  # TODO: Handle errors
+@tasks.loop(seconds=18)
 async def get_items():
     if(utils.is_time_between(active_time[0].time(), active_time[1].time())):
         await ebay.Search.get_items_list()
 
 
-def start_get_items():
-    get_items.start()
+def get_items_interval_str():
+    return f"{get_items.minutes} minutes and {get_items.seconds} seconds"
+
+
+def get_event_loop():
+    return loop
 
 
 def get_bot():
@@ -136,6 +154,10 @@ def read_settings():
 
         global token
         token = _settings["discord"]["token"]
+
+
+def start_get_items():
+    get_items.start()
 
 
 def update_get_items_interval():

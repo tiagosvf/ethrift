@@ -32,10 +32,6 @@ def seconds_between_times(begin_datetime, end_datetime):
         return (end_datetime-begin_datetime).seconds
 
 
-def get_items_interval_str(get_items):
-    return f"{get_items.minutes} minutes and {get_items.seconds} seconds"
-
-
 def get_active_time_str(active_time):
     if (active_time[0]-active_time[1]).seconds == 0:
         return "all day"
