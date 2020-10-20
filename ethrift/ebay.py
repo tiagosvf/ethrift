@@ -283,7 +283,7 @@ class Search:
         channel = bot.get_bot().get_channel(channel_id)
 
         embed = discord.Embed(
-            title=message, description="", color=0x17c3b2)
+            title=message, description="", color=0x3bd148)
         embed.add_field(name="Keywords", value=f"{self.keywords}", inline=True)
         embed.add_field(name="Ebay site",
                         value=f"`{self.ebay_site}`", inline=True)
