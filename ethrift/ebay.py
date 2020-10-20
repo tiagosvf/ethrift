@@ -272,9 +272,6 @@ class Search:
         search_list.append(self)
         bot.update_get_items_interval()
 
-    def formatted_search(self, widths):
-        return f"{self.query: <{widths[1]}}  {self.min_price+'$' : >{widths[2]}}  {self.max_price+'$' : >{widths[3]}}"
-
     def set_newest_start_time_filter(self):
         self.filters['StartTimeFrom'] = self.newest_start_time
 
