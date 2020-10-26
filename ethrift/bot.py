@@ -1,5 +1,4 @@
 # External modules
-from discord import embeds
 import yaml
 import math
 import discord
@@ -25,17 +24,23 @@ bot.remove_command('help')
 
 @bot.command()
 async def ping(ctx):
+    """Check if the bot is online"""
     await ctx.send("Pong!")
 
 
 @bot.command()
 async def kill(ctx):
+    """Shuts down the bot
+    
+    Will remove soon
+    """
     await ctx.send("Goodbye!")
     await bot.logout()
 
 
 @bot.command(aliases=["commands", "help"])
 async def cmd(ctx):
+    """Shows list of commands and more information"""
     embed = discord.Embed(title="\u200b\nI am a simple bot that warns you about new items in eBay searches",
                           description="\u200b\u200b", color=0xc200a8)
     embed.set_author(name="ethrift by @tiagosvf", url="https://github.com/tiagosvf",
@@ -56,6 +61,9 @@ async def cmd(ctx):
 
 @bot.command(aliases=["queries", "list", "lst"])
 async def searches(ctx, page=1):
+    """Lists the current active searches in the selected page.
+    Shows page one if no page is set
+    """
     result = await ebay.Search.get_list_display_embed(page=page, title="List of searches")
     if result:
         await ctx.send(embed=result)
@@ -65,6 +73,12 @@ async def searches(ctx, page=1):
 
 @bot.command()
 async def add(ctx, url):
+    """Adds a search from the requested URL
+
+    Usage: !add <url>
+    Example: !add https://www.ebay.co.uk/sch/i.html?_nkw=selected+ambient+works+cd&LH_TitleDesc=0
+    Result: adds search for "selected ambient works cd" in the EBAY-UK website
+    """
     if hasattr(bot.get_channel(ctx.channel.id), 'recipient'):
         await ctx.send("```Not possible to use bot from direct messages yet.\nInvite me to a channel and add searches from there please.```")
         return
@@ -78,6 +92,12 @@ async def add(ctx, url):
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
 async def delete(ctx, *indexes):
+    """Removes the searches in the given indexes
+
+    Usage: !del <indexes>
+    Example: !del 0 3 7
+    Result: Deletes searches in indexes 0, 3 and 7
+    """
     indexes = list(indexes)
     result = await ebay.Search.delete(indexes)
     if result:
@@ -86,6 +106,17 @@ async def delete(ctx, *indexes):
 
 @bot.command()
 async def active(ctx,  *args):
+    """Display or sets the active time for the bot
+
+    Usage: !active from <hh:mm> to <hh:mm>
+    Example: !active from 10:30 to 00:00
+    Result: Sets the active to be from 10:30 to 00:00
+
+    OR
+
+    Usage: !active
+    Result: Displays the current active time
+    """
     args = list(args)
     global active_time
     if len(args) == 0:
@@ -109,6 +140,7 @@ async def active(ctx,  *args):
 
 @bot.event
 async def on_command_error(ctx, error):
+    """Handles uncaught exceptions when using commands"""
     if isinstance(error, commands.CommandNotFound):
         pass
     elif isinstance(error, commands.CommandError):
@@ -118,23 +150,29 @@ async def on_command_error(ctx, error):
 
 @tasks.loop(seconds=18)
 async def get_items():
+    """get_items task. Periodically runs through searches and adds them to
+    the queue to look for new items"""
     if(utils.is_time_between(active_time[0].time(), active_time[1].time())):
         await ebay.Search.get_items_list()
 
 
 def get_items_interval_str():
+    """Returns get_items interval as a formatted string to display"""
     return f"{get_items.minutes} minutes and {get_items.seconds} seconds"
 
 
 def get_event_loop():
+    """Returns the current event loop"""
     return loop
 
 
 def get_bot():
+    """Returns the Discord bot oject"""
     return bot
 
 
 def read_settings():
+    """Gets the Discord bot token from the settings.yaml"""
     with open(utils.get_file_path("settings.yaml")) as file:
         _settings = yaml.safe_load(file)
 
@@ -143,10 +181,12 @@ def read_settings():
 
 
 def start_get_items():
+    """Starts the get_items task"""
     get_items.start()
 
 
 def update_get_items_interval():
+    """Updates the interval of the get_items task"""
     seconds = utils.seconds_between_times(active_time[0], active_time[1])
     seconds = 86400 if seconds == 0 else seconds
     seconds = math.ceil((seconds/ebay.get_max_calls())

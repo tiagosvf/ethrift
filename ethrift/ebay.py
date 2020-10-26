@@ -75,7 +75,7 @@ class Filters(dict):
         can stop iterating
 
         Keyword Arguments:
-        self               -- Filter object contaning the search's filters
+            self               -- Filter object contaning the search's filters
 
         Return Value:
         Filter object without 25 first elements in LocatedIn filter
@@ -97,7 +97,7 @@ class Filters(dict):
         the 25 first elements so they can be used in the current request.
 
         Keyword Arguments:
-        self               -- Filter object contaning the search's filters
+            self               -- Filter object contaning the search's filters
         """
         if self.get('LocatedIn'):
             self['LocatedIn'] = self.get('LocatedIn')[:25]
@@ -155,8 +155,8 @@ class Filters(dict):
         """Gets all the supported filters from the ebay search url query string
 
         Keyword Arguments:
-        query               -- query string
-        ebay_site           -- the ebay website global ID
+            query               -- query string
+            ebay_site           -- the ebay website global ID
 
         Return Value:
         Filter object with all the gathered filters.
@@ -201,6 +201,7 @@ class Item:
         return self.url == other.url
 
     def display(self, channel_id):
+        """Displays the item as a Discord embed in the given channel"""
         channel = bot.get_bot().get_channel(channel_id)
         Decimal(f"{self.price}").quantize(Decimal("0.00"))
         embed = discord.Embed(
@@ -216,6 +217,14 @@ class Item:
 
     @staticmethod
     def item_from_data(i):
+        """Returns an Item object with the info from the ebay API response.
+
+        Keyword Arguments:
+            i              -- indexes of the searches to remove
+
+        Return Values:
+        Item object. Returns None if could not get item's info.
+        """
         try:
             item = Item(id=i['itemId'],
                         title=i['title'],
@@ -232,6 +241,7 @@ class Item:
 
     @staticmethod
     def items_from_response(search, response):
+        """Runs through the items in the response and displays them"""
         try:
             data_r = ast.literal_eval(str(response.dict()))
             newest_start_time = utils.str_to_datetime_ebay(
@@ -269,17 +279,23 @@ class Search:
         self.newest_start_time = newest_start_time
 
     def add_to_list(self):
+        """Adds the search to the list of searches and updates the interval
+        of the get_items task."""
         search_list.append(self)
         bot.update_get_items_interval()
 
     def set_newest_start_time_filter(self):
+        """Adds the StartTimeFrom filter to the search's filters using the 
+        updated newest_start_time attribute"""
         self.filters['StartTimeFrom'] = self.newest_start_time
 
     def get_filters(self):
+        """Returns a copy of the search's filters"""
         self.set_newest_start_time_filter()
         return self.filters.copy()
 
     async def get_display_embed(self, message):
+        """Returns a Discord embed displaying the search"""
         embed = discord.Embed(
             title=message, description="", color=0x3bd148)
         embed.add_field(name="Keywords", value=f"{self.keywords}", inline=True)
@@ -291,6 +307,15 @@ class Search:
 
     @staticmethod
     async def delete(indexes):
+        """Removes the searches in the given indexes from the list and returns
+        a Discord embed displaying a list of the removed searches
+
+        Keyword Arguments:
+            indexes           -- indexes of the searches to remove
+
+        Return Values:
+        Discord embed displaying a list of the removed searches
+        """
         search_list = get_search_list()
         removed_searches = []
         for index in sorted(indexes, reverse=True):
@@ -309,6 +334,17 @@ class Search:
 
     @staticmethod
     async def add_from_url(url, channel_id):
+        """Gets search information from the URL and adds it to the search list
+
+        Keyword Arguments:
+            url               -- URL of the ebay search given by the user
+            channel_id        -- The ID of the Discord channel the search was
+                             added from
+
+        Return Values:
+        Discord embed displaying the added search. Returns None if the search
+        could not be added.
+        """
         search = Search(url, channel_id)
         if search and search.ebay_site and search.keywords:
             search.add_to_list()
@@ -319,6 +355,17 @@ class Search:
 
     @staticmethod
     def get_search_from_url(url):
+        """Returns the search information sourced from the given URL.
+        Gets the ebay site Global ID from the URL hostname.
+        Gets the keywords and the filters from the query string.
+
+        Keyword Arguments:
+            url               -- URL of the ebay search given by the user
+
+        Return Values:
+        Ebay site Global ID, search keywords and search filters as
+        a Filter object
+        """
         parsed = urlparse.urlparse(url)
         query = urlparse.parse_qs(parsed.query)
 
@@ -340,9 +387,9 @@ class Search:
         is reached.
 
         Keyword Arguments:
-        list               -- list of searches
-        page           
-        indexes            -- custom list of indexes to match the searches being shown
+            list               -- list of searches
+            page           
+            indexes            -- custom list of indexes to match the searches being shown
 
         Return Values:
         A dictionary of names and values for the Discord embed's fields.
@@ -403,11 +450,11 @@ class Search:
         and title for the embed can be provided.
 
         Keyword Arguments:
-        list               -- list of searches
-        page           
-        title              -- title for the Discord embed
-        color              -- color for the discord embed
-        indexes            -- custom list of indexes to match the searches being shown
+            list               -- list of searches
+            page           
+            title              -- title for the Discord embed
+            color              -- color for the discord embed
+            indexes            -- custom list of indexes to match the searches being shown
 
         Return Value:
         Discord embed.
@@ -430,6 +477,7 @@ class Search:
 
     @staticmethod
     async def save_searches():
+        """Saves list of searches as JSON object"""
         data_s = {}
         data_s['searches'] = []
         for search in search_list:
@@ -441,6 +489,10 @@ class Search:
 
     @staticmethod
     def read_searches():
+        """Gets list of searches from saved JSON object and starts Getter threads
+
+        Getter threads are responsible for getting items from searches put
+        into the queue by the get_items task."""
         try:
             json_s = data.read()
             data_s = json.loads(json_s)
@@ -459,6 +511,12 @@ class Search:
 
     @staticmethod
     def get_items():
+        """Task ran by Getter threads to get new items listed from the searches
+        in the queue
+
+        Gets next search from the queue and formats it's filters to then create 
+        a findItemsAdvanced request object. New items are then sourced from the
+        reponse."""
 
         while True:
             try:
@@ -508,14 +566,18 @@ class Search:
 
 
 def get_max_calls():
+    """Returns the maximum daily ebay API calls from the settings"""
     return settings.get('max_calls')
 
 
 def get_search_list():
+    """Returns the list of ebay searches"""
     return search_list
 
 
 def read_settings():
+    """Reads settings from settings.yaml file and initializes the
+    settings dictionary."""
     with open(utils.get_file_path("settings.yaml")) as file:
         _settings = yaml.safe_load(file)
 
