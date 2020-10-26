@@ -58,12 +58,12 @@ def get_active_time_str(active_time):
         return f"from {str(active_time[0].time())[0:5]} to {str(active_time[1].time())[0:5]}"
 
 
-def datetime_to_str_ebay(_datetime):
+def datetime_to_iso(_datetime):
     """Returns the given datetime as a ISO formatted string"""
     return f"{_datetime.year:04d}-{_datetime.month:02d}-{_datetime.day:02d}T{_datetime.hour:02d}:{_datetime.minute:02d}:{_datetime.second:02d}.000Z"
 
 
-def str_to_datetime_ebay(str):
+def iso_to_datetime(str):
     """Returns a datetime object from an ISO format date string"""
     return datetime.strptime(str[:-5], "%Y-%m-%dT%H:%M:%S")
 

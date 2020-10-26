@@ -195,7 +195,7 @@ class Item:
         self.condition = condition
         self.thumbnail = thumbnail
         self.start_time = start_time
-        self.start_time_f = utils.str_to_datetime_ebay(self.start_time)
+        self.start_time_f = utils.iso_to_datetime(self.start_time)
 
     def __eq__(self, other):
         return self.url == other.url
@@ -244,7 +244,7 @@ class Item:
         """Runs through the items in the response and displays them"""
         try:
             data_r = ast.literal_eval(str(response.dict()))
-            newest_start_time = utils.str_to_datetime_ebay(
+            newest_start_time = utils.iso_to_datetime(
                 search.newest_start_time)
             aux_nst = newest_start_time
 
@@ -264,14 +264,14 @@ class Item:
 
                 item.display(search.channel_id)
 
-            search.newest_start_time = utils.datetime_to_str_ebay(aux_nst)
+            search.newest_start_time = utils.datetime_to_iso(aux_nst)
         except KeyError:
             pass
 
 
 class Search:
     def __init__(self, url, channel_id,
-                 newest_start_time=utils.datetime_to_str_ebay(datetime.utcnow())):
+                 newest_start_time=utils.datetime_to_iso(datetime.utcnow())):
         self.url = url
         self.ebay_site, self.keywords, self.filters = Search.get_search_from_url(
             url)
