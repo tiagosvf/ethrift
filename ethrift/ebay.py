@@ -396,7 +396,7 @@ class Search:
         The total number of pages.
         """
         # FIXLATER: Doesn't look good on mobile devices.
-        fields = {'#': '', 'Keywords': '', 'Ebay site': ''}
+        fields = {'#': '\u200b', 'Keywords': '\u200b', 'Ebay site': '\u200b'}
         clean_page_count = {'#': 0, 'Keywords': 0, 'Ebay site': 0}
         page_counter = [clean_page_count.copy()]
         i = 0
@@ -461,7 +461,7 @@ class Search:
         """
         fields, total_pages = await Search.get_searches_table(list, page, indexes)
 
-        if not any({v for v in fields.values() if v}):
+        if not any({v for v in fields.values() if v}) and page == 1:
             return None
 
         embed = discord.Embed(
