@@ -23,7 +23,6 @@ import bot
 
 MAX_CHARACTERS = 1024
 MAX_THREADS = 20
-MAX_QUEUE = 100
 
 settings = {"domain": None, "appid": None, "version": None, "max_calls": 5000}
 
@@ -561,7 +560,7 @@ class Search:
     @staticmethod
     async def get_items_list():
         for search in search_list:
-            if len(queue) < MAX_QUEUE:
+            if len(queue) < len(search_list):
                 queue.append(search)
 
 
