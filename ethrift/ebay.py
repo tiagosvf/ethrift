@@ -7,6 +7,7 @@ import time
 import yaml
 import discord
 import asyncio
+import math
 
 from ebaysdk.finding import Connection as Finding
 from ebaysdk.exception import ConnectionError
@@ -29,6 +30,7 @@ settings = {"domain": None, "appid": None, "version": None, "max_calls": 5000}
 queue = []
 threads = []
 search_list = []
+total_search_cost = 0
 
 
 class Filters(dict):
@@ -281,6 +283,10 @@ class Search:
         """Adds the search to the list of searches and updates the interval
         of the get_items task."""
         search_list.append(self)
+
+        global total_search_cost
+        total_search_cost += self.get_cost()
+
         bot.update_get_items_interval()
 
     def set_newest_start_time_filter(self):
@@ -304,6 +310,18 @@ class Search:
             name="Filters", value=f"[See on ebay]({self.url})", inline=True)
         return embed
 
+    def get_cost(self):
+        """Returns the cost in API calls of the given search
+
+        Since searches with more than 25 countries in the LocatedIn filter
+        need to make multiple calls every time they are ran, they cost more
+        API calls than others.
+        """
+        try:
+            return math.ceil(len(self.filters.get("LocatedIn"))/25)
+        except TypeError:
+            return 1
+
     @staticmethod
     async def delete(indexes):
         """Removes the searches in the given indexes from the list and returns
@@ -315,11 +333,14 @@ class Search:
         Return Values:
         Discord embed displaying a list of the removed searches
         """
+        global total_search_cost
         search_list = get_search_list()
         removed_searches = []
         for index in sorted(indexes, reverse=True):
             try:
-                removed_searches.append(search_list.pop(int(index)))
+                removed = search_list.pop(int(index))
+                removed_searches.append(removed)
+                total_search_cost -= removed.get_cost()
             except IndexError:
                 indexes.remove(index)
         bot.update_get_items_interval()
@@ -562,6 +583,10 @@ class Search:
         for search in search_list:
             if len(queue) < len(search_list):
                 queue.append(search)
+
+
+def get_total_search_cost():
+    return total_search_cost
 
 
 def get_max_calls():

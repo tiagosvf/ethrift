@@ -190,7 +190,7 @@ def update_get_items_interval():
     seconds = utils.seconds_between_times(active_time[0], active_time[1])
     seconds = 86400 if seconds == 0 else seconds
     seconds = math.ceil((seconds/ebay.get_max_calls())
-                        * len(ebay.get_search_list()))
+                        * ebay.get_total_search_cost())
     minutes, seconds = divmod(seconds, 60)
     get_items.change_interval(minutes=minutes, seconds=seconds)
 
