@@ -14,9 +14,6 @@ import ebay
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-
-active_time = [datetime(1900, 1, 1, 0, 0, 0), datetime(1900, 1, 1, 0, 0, 0)]
-
 token = ""
 bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
@@ -51,9 +48,6 @@ async def cmd(ctx):
                                            "\n`!add <url>` › Add search from URL (read the [wiki](https://github.com/tiagosvf/ethrift-py/wiki) for [supported filters](https://github.com/tiagosvf/ethrift-py/wiki/Usage#supported-filters))"
                                            "\n`!del <search numbers (#) separated by spaces>` › Remove searches"
                                            "\n`!searches`, `!list` or `!lst` `[page]` › List all currently active searches"
-                                           "\n"
-                                           "\n`!active` › Check the bot's active hours"
-                                           "\n`!active from <hh:mm> to <hh:mm>` › Set the bot's active hours"
                                            "\n"
                                            "\n`!kill` › Shut down the bot", inline=True)
     await ctx.send(embed=embed)
@@ -104,40 +98,6 @@ async def delete(ctx, *indexes):
         await ctx.send(embed=result)
 
 
-@bot.command()
-async def active(ctx,  *args):
-    """Display or sets the active time for the bot
-
-    Usage: !active from <hh:mm> to <hh:mm>
-    Example: !active from 10:30 to 00:00
-    Result: Sets the active to be from 10:30 to 00:00
-
-    OR
-
-    Usage: !active
-    Result: Displays the current active time
-    """
-    args = list(args)
-    global active_time
-    if len(args) == 0:
-        await ctx.send(f"```Active and looking for new items {utils.get_active_time_str(active_time)}```")
-    else:
-        try:
-            if len(args) < 4:
-                await ctx.send("```Missing arguments.\nUse command as follows: !active from 08:30 to 23:00```")
-                return
-            if args[0].lower() != 'from' or args[2].lower() != 'to':
-                await ctx.send("```Invalid or missing arguments.\nUse command as follows: !active from 08:30 to 23:00```")
-                return
-            active_time = [datetime.strptime(args[1], "%H:%M"),
-                           datetime.strptime(args[3], "%H:%M")]
-
-            update_get_items_interval()
-            await ctx.send(f"```Active time changed\nI will be looking for items {utils.get_active_time_str(active_time)} every {get_items_interval_str()}```")
-        except ValueError:
-            await ctx.send("```Invalid time format\nTime should be in HH:MM format like 08:30```")
-
-
 @bot.event
 async def on_command_error(ctx, error):
     """Handles uncaught exceptions when using commands"""
@@ -152,8 +112,7 @@ async def on_command_error(ctx, error):
 async def get_items():
     """get_items task. Periodically runs through searches and adds them to
     the queue to look for new items"""
-    if(utils.is_time_between(active_time[0].time(), active_time[1].time())):
-        await ebay.Search.get_items_list()
+    await ebay.Search.get_items_list()
 
 
 def get_items_interval_str():
@@ -187,8 +146,7 @@ def start_get_items():
 
 def update_get_items_interval():
     """Updates the interval of the get_items task"""
-    seconds = utils.seconds_between_times(active_time[0], active_time[1])
-    seconds = 86400 if seconds == 0 else seconds
+    seconds = 86400
     seconds = math.ceil((seconds/ebay.get_max_calls())
                         * ebay.get_total_search_cost())
     minutes, seconds = divmod(seconds, 60)
