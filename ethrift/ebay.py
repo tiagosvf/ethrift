@@ -481,7 +481,7 @@ class Search:
         """
         fields, total_pages = await Search.get_searches_table(list, page, indexes)
 
-        if not any({v for v in fields.values() if v}) and page == 1:
+        if not any({v for v in fields.values() if v != '\u200b'}) and page == 1:
             return None
 
         embed = discord.Embed(
