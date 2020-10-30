@@ -8,5 +8,5 @@ ebay:
     version: 1.13.0
     max_daily_calls: 5000
 jsonbin:  # https://jsonbin.io
-    bin-url: YOUR BIN ID
+    bin-in: YOUR BIN ID
     secret-key: YOUR API SECRET KEY  # https://jsonbin.io/api-keys
