@@ -201,9 +201,8 @@ class Item:
     def __eq__(self, other):
         return self.url == other.url
 
-    def display(self, channel_id):
+    def display(self, channel):
         """Displays the item as a Discord embed in the given channel"""
-        channel = bot.get_bot().get_channel(channel_id)
         Decimal(f"{self.price}").quantize(Decimal("0.00"))
         embed = discord.Embed(
             title=f"{self.title}", url=f"{self.url}", description="", color=0xfaa61a)
@@ -263,7 +262,7 @@ class Item:
                 elif item.start_time_f < newest_start_time:
                     break
 
-                item.display(search.channel_id)
+                item.display(search.channel)
 
             search.newest_start_time = utils.datetime_to_iso(aux_nst)
         except KeyError:
@@ -271,12 +270,12 @@ class Item:
 
 
 class Search:
-    def __init__(self, url, channel_id,
+    def __init__(self, url, channel,
                  newest_start_time=utils.datetime_to_iso(datetime.utcnow())):
         self.url = url
         self.ebay_site, self.keywords, self.filters = Search.get_search_from_url(
             url)
-        self.channel_id = channel_id
+        self.channel = channel
         self.newest_start_time = newest_start_time
 
     def add_to_list(self):
@@ -323,12 +322,13 @@ class Search:
             return 1
 
     @staticmethod
-    async def delete(indexes, channel_id):
+    async def delete(indexes, channel):
         """Removes the searches in the given indexes from the list and returns
         a Discord embed displaying a list of the removed searches
 
         Keyword Arguments:
             indexes           -- indexes of the searches to remove
+            channel           -- Discord channel object of requesting the channel
 
         Return Values:
         Discord embed displaying a list of the removed searches
@@ -340,7 +340,7 @@ class Search:
         indexes = sorted(indexes)
         index = 0
         for search in search_list:
-            if search.channel_id == channel_id:
+            if search.channel.id == channel.id:
                 if index in indexes:
                     try:
                         removed = search
@@ -360,19 +360,19 @@ class Search:
         return result
 
     @staticmethod
-    async def add_from_url(url, channel_id):
+    async def add_from_url(url, channel):
         """Gets search information from the URL and adds it to the search list
 
         Keyword Arguments:
             url               -- URL of the ebay search given by the user
-            channel_id        -- The ID of the Discord channel the search was
-                             added from
+            channel           -- The Discord channel object of the channel
+                                 the search was added from
 
         Return Values:
         Discord embed displaying the added search. Returns None if the search
         could not be added.
         """
-        search = Search(url, channel_id)
+        search = Search(url, channel)
         if search and search.ebay_site and search.keywords:
             search.add_to_list()
             await Search.save_searches()
@@ -471,12 +471,13 @@ class Search:
         return fields, len(page_counter)
 
     @staticmethod
-    async def get_list_display_embed(channel_id=None, list=search_list, page=1, title="Searches", color=0x1098f7, indexes=None):
+    async def get_list_display_embed(channel=None, list=search_list, page=1, title="Searches", color=0x1098f7, indexes=None):
         """Returns the list of searches for the specified page as a valid and formatted
         Discord embed. Custom list of searches and indexes for the searches as well as custom color 
         and title for the embed can be provided.
 
         Keyword Arguments:
+            channel            -- Discord channel object of requesting the channel
             list               -- list of searches
             page           
             title              -- title for the Discord embed
@@ -486,8 +487,8 @@ class Search:
         Return Value:
         Discord embed.
         """
-        if channel_id:
-            list = [s for s in search_list if s.channel_id == channel_id]
+        if channel:
+            list = [s for s in search_list if s.channel.id == channel.id]
 
         fields, total_pages = await Search.get_searches_table(list, page, indexes)
 
@@ -513,7 +514,7 @@ class Search:
         for search in search_list:
             data_s["searches"].append(
                 {'url': search.url,
-                 'channel_id': f"{search.channel_id}"})
+                 'channel_id': f"{search.channel.id}"})
             await asyncio.sleep(0.01)
         data.save(data_s)
 
@@ -527,7 +528,8 @@ class Search:
             json_s = data.read()
             data_s = json.loads(json_s)
             for q in data_s['searches']:
-                search = Search(q['url'], int(q['channel_id']))
+                channel = bot.get_bot().get_channel(int(q['channel_id']))
+                search = Search(q['url'], channel)
                 search.add_to_list()
         except KeyError:
             pass
@@ -624,4 +626,3 @@ def read_settings():
 
 def main():
     read_settings()
-    Search.read_searches()

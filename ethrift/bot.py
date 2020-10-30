@@ -19,6 +19,11 @@ bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
 
 
+@bot.event
+async def on_ready():
+    if not ebay.get_search_list():
+        ebay.Search.read_searches()
+
 @bot.command()
 async def ping(ctx):
     """Check if the bot is online"""
@@ -58,7 +63,7 @@ async def searches(ctx, page=1):
     """Lists the current active searches in the selected page.
     Shows page one if no page is set
     """
-    result = await ebay.Search.get_list_display_embed(channel_id=ctx.channel.id, page=page, title="List of searches")
+    result = await ebay.Search.get_list_display_embed(channel=ctx.channel, page=page, title="List of searches")
     if result:
         await ctx.send(embed=result)
     else:
@@ -77,7 +82,7 @@ async def add(ctx, url):
         await ctx.send("```Not possible to use bot from direct messages yet.\nInvite me to a channel and add searches from there please.```")
         return
 
-    result = await ebay.Search.add_from_url(url, ctx.channel.id)
+    result = await ebay.Search.add_from_url(url, ctx.channel)
     if result:
         await ctx.send(embed=result)
     else:
@@ -94,7 +99,7 @@ async def delete(ctx, *indexes):
     """
     indexes = list(indexes)
     try:
-        result = await ebay.Search.delete(indexes, ctx.channel.id)
+        result = await ebay.Search.delete(indexes, ctx.channel)
         if result:
             await ctx.send(embed=result)
     except Exception as e:
