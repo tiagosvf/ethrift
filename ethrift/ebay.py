@@ -323,7 +323,7 @@ class Search:
             return 1
 
     @staticmethod
-    async def delete(indexes):
+    async def delete(indexes, channel_id):
         """Removes the searches in the given indexes from the list and returns
         a Discord embed displaying a list of the removed searches
 
@@ -336,13 +336,20 @@ class Search:
         global total_search_cost
         search_list = get_search_list()
         removed_searches = []
-        for index in sorted(indexes, reverse=True):
-            try:
-                removed = search_list.pop(int(index))
-                removed_searches.append(removed)
-                total_search_cost -= removed.get_cost()
-            except IndexError:
-                indexes.remove(index)
+        indexes = [int(i) for i in indexes]
+        indexes = sorted(indexes)
+        index = 0
+        for search in search_list:
+            if search.channel_id == channel_id:
+                if index in indexes:
+                    try:
+                        removed = search
+                        removed_searches.append(removed)
+                        search_list.remove(search)
+                        total_search_cost -= removed.get_cost()
+                    except IndexError:
+                        indexes.remove(index)
+                index += 1
         bot.update_get_items_interval()
         removed_searches.reverse()
         result = await Search.get_list_display_embed(list=removed_searches,
@@ -464,7 +471,7 @@ class Search:
         return fields, len(page_counter)
 
     @staticmethod
-    async def get_list_display_embed(list=search_list, page=1, title="Searches", color=0x1098f7, indexes=None):
+    async def get_list_display_embed(channel_id=None, list=search_list, page=1, title="Searches", color=0x1098f7, indexes=None):
         """Returns the list of searches for the specified page as a valid and formatted
         Discord embed. Custom list of searches and indexes for the searches as well as custom color 
         and title for the embed can be provided.
@@ -479,6 +486,9 @@ class Search:
         Return Value:
         Discord embed.
         """
+        if channel_id:
+            list = [s for s in search_list if s.channel_id == channel_id]
+
         fields, total_pages = await Search.get_searches_table(list, page, indexes)
 
         if not any({v for v in fields.values() if v != '\u200b'}) and page == 1:

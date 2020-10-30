@@ -58,7 +58,7 @@ async def searches(ctx, page=1):
     """Lists the current active searches in the selected page.
     Shows page one if no page is set
     """
-    result = await ebay.Search.get_list_display_embed(page=page, title="List of searches")
+    result = await ebay.Search.get_list_display_embed(channel_id=ctx.channel.id, page=page, title="List of searches")
     if result:
         await ctx.send(embed=result)
     else:
@@ -93,9 +93,12 @@ async def delete(ctx, *indexes):
     Result: Deletes searches in indexes 0, 3 and 7
     """
     indexes = list(indexes)
-    result = await ebay.Search.delete(indexes)
-    if result:
-        await ctx.send(embed=result)
+    try:
+        result = await ebay.Search.delete(indexes, ctx.channel.id)
+        if result:
+            await ctx.send(embed=result)
+    except Exception as e:
+        print(e)
 
 
 @bot.event
