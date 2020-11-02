@@ -156,7 +156,12 @@ def start_get_items():
 
 
 def update_get_items_interval():
-    """Updates the interval of the get_items task"""
+    """Updates the interval of the get_items task and checks
+    if limit of searches has been reached.
+    
+    Return Values:
+    Boolean representing whether the search can be added.
+    """
     seconds = 86400
     seconds = math.ceil((seconds/ebay.get_max_calls())
                         * ebay.get_total_search_cost())

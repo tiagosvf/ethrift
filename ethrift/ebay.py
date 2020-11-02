@@ -280,7 +280,12 @@ class Search:
 
     def add_to_list(self):
         """Adds the search to the list of searches and updates the interval
-        of the get_items task."""
+        of the get_items task.
+        
+        Return Values:
+        Boolean representing whether the search could be added.
+        Error message if any
+        """
         if not self.url or not self.ebay_site or not self.keywords:
             return False, "The provided URL seems to be invalid.\nGo to ebay, make a search by keywords, and copy the URL in your browser's address bar."
 
@@ -379,6 +384,7 @@ class Search:
         Return Values:
         Discord embed displaying the added search. Returns None if the search
         could not be added.
+        Error message if any
         """
         search = Search(url, channel)
         result, message = search.add_to_list()
