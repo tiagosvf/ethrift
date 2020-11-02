@@ -52,7 +52,7 @@ async def cmd(ctx):
     embed.add_field(name="Commands", value="`!help`, `!cmd` or `!commands` › Show this message"
                                            "\n`!ping` › Check if bot is online"
                                            "\n"  # TODO: Create a wiki and add information about supported filters
-                                           "\n`!add <url>` › Add search from URL (read the [wiki](https://github.com/tiagosvf/ethrift-py/wiki) for [supported filters](https://github.com/tiagosvf/ethrift-py/wiki/Usage#supported-filters))"
+                                           "\n`!add <url>` › Add search from URL (read the [wiki](https://github.com/tiagosvf/ethrift/wiki) for [supported filters](https://github.com/tiagosvf/ethrift/wiki/Usage#supported-filters))"
                                            "\n`!del <search numbers (#) separated by spaces>` › Remove searches"
                                            "\n`!searches`, `!list` or `!lst` `[page]` › List all currently active searches"
                                            "\n"
