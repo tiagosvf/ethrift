@@ -10,7 +10,7 @@ jsonbin = {"bin-id": None, "secret-key": None}
 
 current_threads = 0
 
-with open(utils.get_file_path("..\settings.yaml")) as file:
+with open(utils.get_file_path("../settings.yaml")) as file:
     settings = yaml.safe_load(file)
     jsonbin["bin-id"] = settings["jsonbin"]["bin-id"]
     jsonbin["secret-key"] = settings["jsonbin"]["secret-key"]
