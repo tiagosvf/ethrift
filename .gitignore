@@ -132,4 +132,4 @@ dmypy.json
 .vscode/settings.json
 
 #Config files
-ethrift/settings.yaml
+settings.yaml

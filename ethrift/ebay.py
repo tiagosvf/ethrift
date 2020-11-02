@@ -629,7 +629,7 @@ def get_search_list():
 def read_settings():
     """Reads settings from settings.yaml file and initializes the
     settings dictionary."""
-    with open(utils.get_file_path("settings.yaml")) as file:
+    with open(utils.get_file_path("..\settings.yaml")) as file:
         _settings = yaml.safe_load(file)
 
         global settings

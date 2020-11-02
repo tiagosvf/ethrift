@@ -142,7 +142,7 @@ def get_bot():
 
 def read_settings():
     """Gets the Discord bot token from the settings.yaml"""
-    with open(utils.get_file_path("settings.yaml")) as file:
+    with open(utils.get_file_path("..\settings.yaml")) as file:
         _settings = yaml.safe_load(file)
 
         global token, max_interval
