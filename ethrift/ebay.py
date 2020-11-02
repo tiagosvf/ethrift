@@ -281,12 +281,20 @@ class Search:
     def add_to_list(self):
         """Adds the search to the list of searches and updates the interval
         of the get_items task."""
+        if not self.url or not self.ebay_site or not self.keywords:
+            return False, "The provided URL seems to be invalid.\nGo to ebay, make a search by keywords, and copy the URL in your browser's address bar."
+
         search_list.append(self)
 
         global total_search_cost
         total_search_cost += self.get_cost()
 
-        bot.update_get_items_interval()
+        if not bot.update_get_items_interval():
+            total_search_cost -= self.get_cost()
+            search_list.remove(self)
+            return False, "The maximum number of searches has been reached."
+
+        return True, ""
 
     def set_newest_start_time_filter(self):
         """Adds the StartTimeFrom filter to the search's filters using the 
@@ -373,12 +381,11 @@ class Search:
         could not be added.
         """
         search = Search(url, channel)
-        if search and search.ebay_site and search.keywords:
-            search.add_to_list()
-            await Search.save_searches()
-            return await search.get_display_embed("Added search:")
-        else:
-            return None
+        result, message = search.add_to_list()
+        if not result:
+            return None, message
+        await Search.save_searches()
+        return await search.get_display_embed("Added search:"), ""
 
     @staticmethod
     def get_search_from_url(url):

@@ -6,7 +6,8 @@ ebay:
     domain: svcs.ebay.com
     appid: YOUR EBAY APPID
     version: 1.13.0
-    max_daily_calls: 5000
+    max daily_calls: 5000 # Maximum number of calls per day for the Finding API available in your eBay Developers Program account
+    max_refresh_interval: 300 # Maximum interval, in seconds, between checking for new items in all searches. This will limit the number of searches that can be added according to max_daily_calls (Use 0 for no limit)
 jsonbin:  # https://jsonbin.io
     bin-in: YOUR BIN ID
     secret-key: YOUR API SECRET KEY  # https://jsonbin.io/api-keys

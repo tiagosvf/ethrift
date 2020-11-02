@@ -15,6 +15,7 @@ loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
 token = ""
+max_interval = 0
 bot = commands.Bot(command_prefix='!')
 bot.remove_command('help')
 
@@ -23,6 +24,7 @@ bot.remove_command('help')
 async def on_ready():
     if not ebay.get_search_list():
         ebay.Search.read_searches()
+
 
 @bot.command()
 async def ping(ctx):
@@ -33,7 +35,7 @@ async def ping(ctx):
 @bot.command()
 async def kill(ctx):
     """Shuts down the bot
-    
+
     Will remove soon
     """
     await ctx.send("Goodbye!")
@@ -82,11 +84,11 @@ async def add(ctx, url):
         await ctx.send("```Not possible to use bot from direct messages yet.\nInvite me to a channel and add searches from there please.```")
         return
 
-    result = await ebay.Search.add_from_url(url, ctx.channel)
+    result, message = await ebay.Search.add_from_url(url, ctx.channel)
     if result:
         await ctx.send(embed=result)
     else:
-        await ctx.send("```The provided URL seems to be invalid.\nGo to ebay, make a search by keywords, and copy the URL in your browser's address bar.```")
+        await ctx.send(f"```{message}```")
 
 
 @bot.command(aliases=["del", "rm", "rem", "remove"])
@@ -116,7 +118,7 @@ async def on_command_error(ctx, error):
         await ctx.send("```An error occured.\nUse !help to make sure you used the command correctly.```")
 
 
-@tasks.loop(seconds=18)
+@tasks.loop(seconds=30)
 async def get_items():
     """get_items task. Periodically runs through searches and adds them to
     the queue to look for new items"""
@@ -143,8 +145,9 @@ def read_settings():
     with open(utils.get_file_path("settings.yaml")) as file:
         _settings = yaml.safe_load(file)
 
-        global token
+        global token, max_interval
         token = _settings["discord"]["token"]
+        max_interval = _settings["ebay"]["max_refresh_interval"]
 
 
 def start_get_items():
@@ -157,8 +160,15 @@ def update_get_items_interval():
     seconds = 86400
     seconds = math.ceil((seconds/ebay.get_max_calls())
                         * ebay.get_total_search_cost())
+
+    if max_interval and seconds > max_interval:
+        return False
+
+    seconds = 30 if seconds < 30 else seconds
+
     minutes, seconds = divmod(seconds, 60)
     get_items.change_interval(minutes=minutes, seconds=seconds)
+    return True
 
 
 def main():
