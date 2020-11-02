@@ -278,7 +278,7 @@ class Search:
         self.channel = channel
         self.newest_start_time = newest_start_time
 
-    def add_to_list(self):
+    async def add_to_list(self):
         """Adds the search to the list of searches and updates the interval
         of the get_items task.
         
@@ -299,6 +299,7 @@ class Search:
             search_list.remove(self)
             return False, "The maximum number of searches has been reached."
 
+        await bot.update_presence()
         return True, ""
 
     def set_newest_start_time_filter(self):
@@ -364,6 +365,7 @@ class Search:
                         indexes.remove(index)
                 index += 1
         bot.update_get_items_interval()
+        await bot.update_presence()
         removed_searches.reverse()
         result = await Search.get_list_display_embed(list=removed_searches,
                                                      title="Removed searches",
@@ -387,7 +389,7 @@ class Search:
         Error message if any
         """
         search = Search(url, channel)
-        result, message = search.add_to_list()
+        result, message = await search.add_to_list()
         if not result:
             return None, message
         await Search.save_searches()
@@ -532,7 +534,7 @@ class Search:
         data.save(data_s)
 
     @staticmethod
-    def read_searches():
+    async def read_searches():
         """Gets list of searches from saved JSON object and starts Getter threads
 
         Getter threads are responsible for getting items from searches put
@@ -543,7 +545,7 @@ class Search:
             for q in data_s['searches']:
                 channel = bot.get_bot().get_channel(int(q['channel_id']))
                 search = Search(q['url'], channel)
-                search.add_to_list()
+                await search.add_to_list()
         except KeyError:
             pass
         bot.start_get_items()

@@ -23,7 +23,7 @@ bot.remove_command('help')
 @bot.event
 async def on_ready():
     if not ebay.get_search_list():
-        ebay.Search.read_searches()
+        await ebay.Search.read_searches()
 
 
 @bot.command()
@@ -158,7 +158,7 @@ def start_get_items():
 def update_get_items_interval():
     """Updates the interval of the get_items task and checks
     if limit of searches has been reached.
-    
+
     Return Values:
     Boolean representing whether the search can be added.
     """
@@ -174,6 +174,10 @@ def update_get_items_interval():
     minutes, seconds = divmod(seconds, 60)
     get_items.change_interval(minutes=minutes, seconds=seconds)
     return True
+
+
+async def update_presence():
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"{len(ebay.get_search_list())} searches | !help"))
 
 
 def main():
