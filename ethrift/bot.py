@@ -26,22 +26,6 @@ async def on_ready():
         await ebay.Search.read_searches()
 
 
-@bot.command()
-async def ping(ctx):
-    """Check if the bot is online"""
-    await ctx.send("Pong!")
-
-
-@bot.command()
-async def kill(ctx):
-    """Shuts down the bot
-
-    Will remove soon
-    """
-    await ctx.send("Goodbye!")
-    await bot.logout()
-
-
 @bot.command(aliases=["commands", "help"])
 async def cmd(ctx):
     """Shows list of commands and more information"""
@@ -50,13 +34,10 @@ async def cmd(ctx):
     embed.set_author(name="ethrift by @tiagosvf", url="https://github.com/tiagosvf",
                      icon_url="https://avatars0.githubusercontent.com/u/25352856?s=460&u=f5b0c682e7634580340e2fea35bce3764686e02e&v=4")
     embed.add_field(name="Commands", value="`!help`, `!cmd` or `!commands` › Show this message"
-                                           "\n`!ping` › Check if bot is online"
                                            "\n"  # TODO: Create a wiki and add information about supported filters
                                            "\n`!add <url>` › Add search from URL (read the [wiki](https://github.com/tiagosvf/ethrift/wiki) for [supported filters](https://github.com/tiagosvf/ethrift/wiki/Usage#supported-filters))"
                                            "\n`!del <search numbers (#) separated by spaces>` › Remove searches"
-                                           "\n`!searches`, `!list` or `!lst` `[page]` › List all currently active searches"
-                                           "\n"
-                                           "\n`!kill` › Shut down the bot", inline=True)
+                                           "\n`!searches`, `!list` or `!lst` `[page]` › List all currently active searches", inline=True)
     await ctx.send(embed=embed)
 
 
