@@ -281,7 +281,7 @@ class Search:
     async def add_to_list(self):
         """Adds the search to the list of searches and updates the interval
         of the get_items task.
-        
+
         Return Values:
         Boolean representing whether the search could be added.
         Error message if any
@@ -449,10 +449,8 @@ class Search:
         while i < len(list):
             search = list[i]
             page_index = len(page_counter)-1
-            try:
-                number = i if not indexes else int(next(indexes))
-            except Exception as e:
-                print(e)
+
+            number = i if not indexes else int(next(indexes))
             temp_fields = {
                 '#': f"\u200b\n{number}\n",
                 'Keywords': f"\u200b\n**[{search.keywords}]({search.url})**\n",
@@ -475,7 +473,7 @@ class Search:
                 # I know it's inefficient :)
                 page_counter.append(clean_page_count.copy())
                 i -= 1  # Goes back one iteration.
-                # Obviously this doesn't contemplate given indexes and
+                # Obviously this doesn't contemplate given indexes and4
                 # they would stop matching i after the first page
                 # but I don't need to make it work for now because they are given
                 # solely when deleting searches and in that case
