@@ -352,7 +352,7 @@ class Search:
         removed_searches = []
         indexes = [int(i) for i in indexes]
         indexes = sorted(indexes)
-        index = 0
+        index = 1
         for search in search_list:
             if search.channel.id == channel.id:
                 if index in indexes:
@@ -450,7 +450,7 @@ class Search:
             search = list[i]
             page_index = len(page_counter)-1
 
-            number = i if not indexes else int(next(indexes))
+            number = i+1 if not indexes else int(next(indexes))
             temp_fields = {
                 '#': f"\u200b\n{number}\n",
                 'Keywords': f"\u200b\n**[{search.keywords}]({search.url})**\n",
