@@ -546,6 +546,7 @@ class Search:
                 await search.add_to_list()
         except KeyError:
             pass
+        await bot.update_presence()
         bot.start_get_items()
 
         for i in range(MAX_THREADS):
