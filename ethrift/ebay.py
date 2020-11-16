@@ -299,7 +299,6 @@ class Search:
             search_list.remove(self)
             return False, "The maximum number of searches has been reached."
 
-        await bot.update_presence()
         return True, ""
 
     def set_newest_start_time_filter(self):
@@ -393,6 +392,7 @@ class Search:
         if not result:
             return None, message
         await Search.save_searches()
+        await bot.update_presence()
         return await search.get_display_embed("Added search:"), ""
 
     @staticmethod
