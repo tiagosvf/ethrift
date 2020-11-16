@@ -424,9 +424,10 @@ class Search:
     @staticmethod
     async def get_searches_table(list, page, indexes):
         """Gets the requested page from the list of searches and formats it to
-        look good on a Discord embed while counting the total number of pages.
-        A page ends when Discord's limit of characters for any of the fields
-        is reached.
+        look good on a Discord embed while calculating the total number of pages
+        based on a limit of 8 searches per page. This limit is the result of the maximum
+        of 25 fields per Discord embed divided by the 3 fields need for every search.
+        (#, Keywords and Ebay site)
 
         Keyword Arguments:
             list               -- list of searches
@@ -434,54 +435,30 @@ class Search:
             indexes            -- custom list of indexes to match the searches being shown
 
         Return Values:
-        A dictionary of names and values for the Discord embed's fields.
+        A list of dictionaries with names and values for the Discord embed's fields.
         The total number of pages.
         """
-        # FIXLATER: Doesn't look good on mobile devices.
-        fields = {'#': '\u200b', 'Keywords': '\u200b', 'Ebay site': '\u200b'}
-        clean_page_count = {'#': 0, 'Keywords': 0, 'Ebay site': 0}
-        page_counter = [clean_page_count.copy()]
-        i = 0
+        MAX_SEARCHES = 8
+
+        fields = []
 
         if indexes:
             indexes = iter(indexes)
 
-        while i < len(list):
-            search = list[i]
-            page_index = len(page_counter)-1
-
+        for i in range(MAX_SEARCHES*(page-1), MAX_SEARCHES*(page-1)+MAX_SEARCHES):
+            if i >= len(list):
+                break
             number = i+1 if not indexes else int(next(indexes))
-            temp_fields = {
-                '#': f"\u200b\n{number}\n",
-                'Keywords': f"\u200b\n**[{search.keywords}]({search.url})**\n",
-                'Ebay site': f"\u200b\n{search.ebay_site.lower()}\n",
-            }
-            page_counter[page_index]['#'] += len(temp_fields.get('#'))
-            page_counter[page_index]['Keywords'] += len(
-                temp_fields.get('Keywords'))
-            page_counter[page_index]['Ebay site'] += len(
-                temp_fields.get('Ebay site'))
+            fields.append(
+                {'#': f'{number}', 'Keywords': f'**[{list[i].keywords}]({list[i].url})**', 'Ebay site': f'{list[i].ebay_site.lower()}'})
 
-            len_check = any(
-                [k for k in page_counter[page_index].values() if k > MAX_CHARACTERS])
+        if not fields and (page == 1 and not indexes):
+            fields = None
+        elif not fields:
+            fields.append(
+                {'#': '\u200b', 'Keywords': '\u200b', 'Ebay site': '\u200b'})
 
-            if not len_check and len(page_counter) == page:
-                fields = {k: (v+temp_fields.get(k))
-                          for (k, v) in fields.items()}
-            elif len_check:
-                # It keeps going for the sake of counting pages.
-                # I know it's inefficient :)
-                page_counter.append(clean_page_count.copy())
-                i -= 1  # Goes back one iteration.
-                # Obviously this doesn't contemplate given indexes and4
-                # they would stop matching i after the first page
-                # but I don't need to make it work for now because they are given
-                # solely when deleting searches and in that case
-                # only the first page is shown
-
-            i += 1
-
-        return fields, len(page_counter)
+        return fields, math.ceil(len(list)/MAX_SEARCHES)
 
     @staticmethod
     async def get_list_display_embed(channel=None, list=search_list, page=1, title="Searches", color=0x1098f7, indexes=None):
@@ -505,14 +482,19 @@ class Search:
 
         fields, total_pages = await Search.get_searches_table(list, page, indexes)
 
-        if not any({v for v in fields.values() if v != '\u200b'}) and (page == 1 and not indexes):
+        if not fields:
             return None
 
         embed = discord.Embed(
             title=title, description="Click on a search to open it on ebay and see it's filters", color=color)
 
-        for name, value in fields.items():
-            embed.add_field(name=name, value=value, inline=True)
+        for i in range(0, len(fields)):
+            if i != 0:
+                for name, value in fields[i].items():
+                    embed.add_field(name='\u200b', value=value, inline=True)
+            else:
+                for name, value in fields[i].items():
+                    embed.add_field(name=name, value=value, inline=True)
 
         embed.set_footer(text=f"\u200b\n< {page} / {total_pages} >"
                               "\n\n"
