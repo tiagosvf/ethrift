@@ -351,25 +351,29 @@ class Search:
         removed_searches = []
         indexes = [int(i) for i in indexes]
         indexes = sorted(indexes)
+        o_indexes = indexes.copy()
         index = 1
-        for search in search_list:
-            if search.channel.id == channel.id:
-                if index in indexes:
-                    try:
-                        removed = search
-                        removed_searches.append(removed)
-                        search_list.remove(search)
-                        total_search_cost -= removed.get_cost()
-                    except IndexError:
-                        indexes.remove(index)
-                index += 1
+        channels_searches = [s for s in search_list if s.channel.id == channel.id]
+        for search in channels_searches:
+            if index in indexes:
+                try:
+                    removed = search
+                    removed_searches.append(removed)
+                    search_list.remove(search)
+                    total_search_cost -= removed.get_cost()
+                    indexes.remove(index)
+                    if not indexes:
+                        break
+                except IndexError:
+                    o_indexes.remove(index)
+            index += 1
         bot.update_get_items_interval()
         await bot.update_presence()
         removed_searches.reverse()
         result = await Search.get_list_display_embed(list=removed_searches,
                                                      title="Removed searches",
                                                      color=0xed474a,
-                                                     indexes=sorted(indexes))
+                                                     indexes=o_indexes)
         await Search.save_searches()
         return result
 
