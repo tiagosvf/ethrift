@@ -528,6 +528,8 @@ class Search:
             data_s = json.loads(json_s)
             for q in data_s['searches']:
                 channel = bot.get_bot().get_channel(int(q['channel_id']))
+                if not channel:
+                    continue
                 search = Search(q['url'], channel)
                 await search.add_to_list()
         except KeyError:
