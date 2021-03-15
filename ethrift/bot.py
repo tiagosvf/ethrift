@@ -96,7 +96,7 @@ async def on_command_error(ctx, error):
         pass
     elif isinstance(error, commands.CommandError):
         print(f"Error: {error}")
-        await ctx.send("```An error occured.\nUse !help to make sure you used the command correctly.```")
+        await ctx.send("```An error occurred.\nUse !help to make sure you used the command correctly.```")
 
 
 @tasks.loop(seconds=30)

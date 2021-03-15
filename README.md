@@ -1,6 +1,6 @@
 # eThrift
 
-A Discord bot that warns you about new items in eBay searches.
+A Discord bot that monitors ebay and warns you about new items in your searches.
 
 Bellow is a simple usage guide. For more information refer to the [Wiki](https://github.com/tiagosvf/ethrift/wiki)
 
