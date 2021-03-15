@@ -35,7 +35,7 @@ async def cmd(ctx):
                      icon_url="https://avatars0.githubusercontent.com/u/25352856?s=460&u=f5b0c682e7634580340e2fea35bce3764686e02e&v=4")
     embed.add_field(name="Commands", value="`!help`, `!cmd` or `!commands` › Show this message"
                                            "\n"  # TODO: Create a wiki and add information about supported filters
-                                           "\n`!add <url>` › Add search from URL (read the [wiki](https://github.com/tiagosvf/ethrift/wiki) for [supported filters](https://github.com/tiagosvf/ethrift/wiki/Usage#supported-filters))"
+                                           "\n`!add <url>` › Add search from URL (read the [wiki](https://github.com/tiagosvf/ethrift/wiki) for [supported filters](https://github.com/tiagosvf/ethrift/wiki/Support#filters))"
                                            "\n`!del <search numbers (#) separated by spaces>` › Remove searches"
                                            "\n`!searches`, `!list` or `!lst` `[page]` › List all currently active searches", inline=True)
     await ctx.send(embed=embed)
